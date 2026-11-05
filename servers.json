@@ -3,7 +3,7 @@
     "name": "web01",
     "address": "example.com",
     "env": "prod",
-    "type": "webb-server",
+    "role": "web-server",
     "status": "unknown",
     "last_checked": ""
   },
@@ -11,7 +11,7 @@
     "name": "db01",
     "address": "127.0.0.1",
     "env": "prod",
-    "type": "database",
+    "role": "database",
     "status": "unknown",
     "last_checked": ""
   },
@@ -19,7 +19,7 @@
     "name": "test01",
     "address": "192.0.2.10",
     "env": "test",
-    "type": "test-server",
+    "role": "test-server",
     "status": "unknown",
     "last_checked": ""
   },
@@ -27,7 +27,7 @@
     "name": "dev01",
     "address": "localhost",
     "env": "dev",
-    "type": "dev-server",
+    "role": "dev-server",
     "status": "unknown",
     "last_checked": ""
   }
