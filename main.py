@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse
 
 def main():
@@ -18,7 +20,6 @@ def main():
     # Flag to list all servers with a specific environment
     actions.add_argument(
         "-e", "--list-env",
-        type=str,
         choices=["dev", "test", "prod"],
         help="List all servers in provided environment"
     )
@@ -26,7 +27,6 @@ def main():
     # Flag for checking status on specific server
     actions.add_argument(
         "-c", "--check",
-        type=str,
         metavar="NAME",
         help="Check specific server status"
     )
