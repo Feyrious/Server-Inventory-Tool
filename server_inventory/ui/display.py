@@ -7,10 +7,10 @@ the CLI so the table looks the same in both modes.
 # One entry per column: (key in the server dict, column title, column width).
 # Widths are defined once here, so the header and the rows always line up.
 _COLUMNS = [
-    ("name", "Name", 10),
+    ("name", "Name", 15),
     ("address", "Address", 16),
     ("env", "Env", 6),
-    ("role", "Role", 13),
+    ("role", "Role", 15),
     ("status", "Status", 10),
     ("last_checked", "Last checked", 16),
 ]
