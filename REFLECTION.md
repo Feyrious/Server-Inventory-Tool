@@ -40,6 +40,8 @@
 - An empty variable (`INVENTORY_DATA_FILE=`) falls back to the default instead of trying to open `""`.
 - The default is anchored to the project folder with `Path(__file__)`, so the tool works when started from another folder. The env var path is used as given (relative to where the command runs), which is what CLI users expect.
 - Would change: if there were more settings, add a config file with the order *env var > config file > default* (the "Konfigurationsfil" VG extra).
+- `.env.example` lists every variable the tool reads, with its default. Python doesn't load `.env` files by itself (that needs a library like `python-dotenv`); I kept to the standard library and documented `set -a; source .env` instead. The real `.env` is in `.gitignore`, so local settings (and any future secrets) never reach git.
+- Writing the example showed a subtle difference: the code's default is anchored to the project folder, but `INVENTORY_DATA_FILE=servers.json` is relative to where you run the command. Same value, different meaning; documented in the file.
 
 ### Using `subprocess` and the system `ping` instead of a Python implementation **[VG2 list]**
 - Chose: `ServerChecker._ping()` runs `ping -c 1 -W 2 <address>` and only looks at the exit code (G9).
@@ -48,6 +50,7 @@
 - Discovered in practice: my development sandbox could not run ping at all ("Operation not permitted"), while my own terminal could. Checks depend on the environment the tool runs in.
 - Cons: the flags are Linux-specific (`-W` means milliseconds on macOS, and Windows uses different flags). Some networks block ping, so "down" can mean "blocked" rather than "offline".
 - `-W 2` timeout: without it, unreachable addresses like `192.0.2.10` hang for a long time.
+- Relying on an external command means it may not exist: slim Docker images don't include `ping`. Found in the code review; `_ping()` now catches `FileNotFoundError` and raises `PingNotAvailableError` (exit code 7) instead of crashing with a traceback.
 
 ### Sending the command to `subprocess.run()` as a list **[VG2 list]**
 - Chose: `_build_ping_command()` returns `["ping", "-c", "1", "-W", "2", address]`.
@@ -58,9 +61,9 @@
 - CLI for scripts and pipelines: the exit code is the result (G16). The menu is for people.
 - Both use the same services, so behaviour can't drift between them.
 - argparse mutually exclusive group: conflicting flags (`-l -a`) give an error and exit code 2 instead of being silently ignored by an `if/elif` chain. The library enforces the rule instead of my own code.
-- `--list-env` is a separate flag instead of the spec's `--list --env prod`: a deliberate deviation, clearer to use, documented in the README.
+- First version: `--list-all` and `--list-env prod` as two separate actions. The review against G15 showed the spec's `--lista --miljo prod` then had no 1-to-1 translation (`--list-all --list-env prod` was rejected by the exclusive group). Changed to `-l/--list` plus an optional `-e/--env` filter outside the group, like `--verbose`. Lesson: English names were approved, different behaviour was not.
 - C# habit that went wrong: `type=bool` in argparse. `bool("False")` is `True`; flags should use `action="store_true"`.
-- `process_data()` in `main.py` returns `True`/`False` and only `main()` calls `status_ok()` / `status_failed()`. The logic reports a result; one place decides how the process ends (G16).
+- `process_data()` in `main.py` returns `True`/`False` and only `main()` calls `exit_program()`. The logic reports a result; one place decides how the process ends (G16).
 - `VALID_ENVIRONMENTS` is now the single source for the CLI `choices`, the menu prompt and the service rule, so the three can't disagree.
 - The CLI `--check-all` prints only the final table, while the menu shows each server live. Same service method, the caller decides how much to show.
 
@@ -75,10 +78,18 @@
 - Callers decide how to show it: the menu prints the message, the CLI turns it into exit code 1.
 - Alternative: return `True`/`False` or `None`, which loses the reason.
 
+### Exit codes: one per error scenario (`exit_status.ExitCode`, `errors.py`)
+- `ExitCode` is an `IntEnum`: named constants that are real integers, so `sys.exit(ExitCode.DATA_FILE_INVALID)` works and the code reads like documentation.
+- G16 fixes code 1 for both "server down" and "server not found", so they share `CHECK_FAILED`; every other scenario got its own code (2–7). 2 matches argparse's own code for bad arguments, and 130 (128 + SIGINT) is the Unix convention for Ctrl+C, so pipelines recognise them.
+- Each exception class carries its own exit code as a class attribute and inherits from `InventoryError`, so `main.py` handles all of them in one `except InventoryError` block. Adding a new error = one new class, no change in `main.py`.
+- Alternative: catch each exception type in `main.py` and map it to a code there. Keeps exit codes out of `errors.py`, but the mapping grows with every new error.
+- Storage classes translate low-level errors (`OSError`, `JSONDecodeError`) into these types with `raise ... from error`, which keeps the original error attached (like `InnerException` in C#).
+- Con: `errors.py` now depends on `exit_status`, so the error types know about the CLI. Acceptable for a small tool; a library would keep them separate.
+
 ### `exists()` (look before you leap) vs `try/except FileNotFoundError` (easier to ask forgiveness)
 - `ServerRepository.load()` uses `exists()` because G7 asks for it.
 - The more Pythonic alternative is `try/except`; it also avoids a race where the file disappears between the check and the open.
-- Broken JSON (`json.JSONDecodeError`) is caught in `main.create_services()` and exits with code 1 through `exit_status.error_read_file()`. The repository itself doesn't decide how to report it.
+- Broken JSON, a JSON object instead of a list, and unreadable files are turned into `DataFileInvalidError` / `DataFileUnreadableError` inside `ServerRepository.load()`, and end the program with exit code 3 or 4. A data file in a folder that doesn't exist is created on the first save (found in review; used to crash).
 
 ### `check_all()` uses a loop, not `all(...)`
 - `all()` stops at the first `False`, so servers after the first down server would never be checked and keep stale status.
@@ -105,7 +116,11 @@
 ### Global state: `config.IS_VERBOSE`
 - A module-level variable set once from `main.py` and read by `exit_status`. Simple, but it is hidden global state.
 - Alternative: pass `verbose` as a parameter or into constructors. More explicit, more plumbing.
-- Consequence: `exit_status` only prints when verbose is on, so without `-v` a broken data file exits with code 1 but shows nothing. Fine for pipelines (they read the exit code), confusing for a person. Would change: always print errors to stderr, and use verbose only for extra detail.
+- First version: `exit_status` only printed when verbose was on, so without `-v` a broken data file exited silently. Changed: error messages always print to stderr; verbose is only for extra detail.
+- Verbose messages go through one helper, `verbose.log_verbose()`, so the "only if verbose" check is written once (G18) instead of `if config.IS_VERBOSE: print(...)` everywhere.
+- They are debug/status messages, so they appear in services and storage too, not only in the UI. Accepted as a deliberate exception to "services never print", the same way a logger would be used.
+- stdout vs stderr: normal output (the table) goes to stdout and `[verbose]` lines to stderr, so `main.py -l -v > servers.txt` gives a clean file while debug lines still show in the terminal.
+- Would change in a bigger tool: use Python's `logging` module with levels (DEBUG/INFO/ERROR) instead of a home-made helper.
 
 ### Process: git flow and one PR per feature
 - `main` / `develop` / `feature/*` branches, every change merged through a PR with a description and test table.
