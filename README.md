@@ -89,3 +89,16 @@ get the project as in step 2 of the [Linux](#linux) steps.
 > removing and exporting work normally, but checks of remote servers will
 > usually show `down`. For reliable checks, run the tool on Linux or in a
 > Linux container.
+
+## Quick start
+
+From the project folder:
+
+```bash
+python3 main.py                  # start the text menu
+python3 main.py --list           # print all servers and exit
+python3 main.py --check-all      # check every server, exit code 0 if all are up
+```
+
+The project comes with example servers in `servers.json`, so every command
+works right away.
