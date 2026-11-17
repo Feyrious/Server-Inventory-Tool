@@ -367,3 +367,45 @@ its name are also printed when the program ends, for example
 In the text menu, problems such as an unknown server name are shown as a
 message and the menu keeps running. Pressing Ctrl+D at a menu prompt quits
 like choosing `0` (exit code `0`).
+
+## Project structure
+
+```text
+Server-Inventory-Tool/
+├── main.py                        Entry point: reads the flags (argparse), creates the
+│                                  services, runs the menu or a CLI action, sets the exit code
+├── servers.json                   The server data (example servers included)
+├── .env.example                   Every environment variable the tool reads, with defaults
+├── reports/
+│   └── report.example.csv         Example of an exported report
+└── server_inventory/              The application package
+    ├── config.py                  Settings: verbose flag, data file (INVENTORY_DATA_FILE), reports folder
+    ├── errors.py                  The program's own exceptions, each with its exit code
+    ├── exit_status.py             ExitCode list and exit_program(): ends the program with the right code
+    ├── verbose.py                 log_verbose(): debug messages, printed only with --verbose
+    ├── storage/                   Everything that reads or writes files
+    │   ├── server_repository.py   ServerRepository: loads and saves the JSON data file
+    │   └── report_exporter.py     ReportExporter: writes the CSV reports
+    ├── services/                  The rules, no input() or print()
+    │   ├── inventory_service.py   InventoryService: find, filter, add, remove and check servers,
+    │   │                          and save after every change
+    │   └── server_checker.py      ServerChecker: runs ping with subprocess and updates a server's status
+    └── ui/                        Everything the user sees
+        ├── menu.py                Menu: the interactive text menu
+        └── display.py             print_server_table(): the aligned server table
+```
+
+How the parts work together:
+
+- `main.py` creates the objects once and passes them to each other
+  (`ServerRepository` and `ServerChecker` into `InventoryService`).
+- The text menu and the command line call the **same** service methods, so
+  every rule (unique names, valid environments, saving after each change) is
+  written once and behaves the same in both modes.
+- The services never ask the user anything and never decide how the program
+  ends. They return results or raise exceptions; the menu and `main.py`
+  decide what to show and which exit code to use.
+
+To change how servers are checked, start in `services/server_checker.py`. To
+add a menu choice, add one line to the `_menu_items` dictionary in
+`ui/menu.py` and a method that handles it.
