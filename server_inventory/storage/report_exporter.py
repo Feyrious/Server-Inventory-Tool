@@ -17,6 +17,7 @@ class ReportExporter:
     def __init__(self, reports_directory: Path):
         self.reports_directory = reports_directory
 
+    # region Public methods
     def export_csv(self, servers: list[dict]) -> Path:
         """Write all servers to a timestamped CSV file and return its path (G8)."""
         self.reports_directory.mkdir(parents=True, exist_ok=True)
@@ -29,8 +30,11 @@ class ReportExporter:
             writer.writerows(servers)
 
         return report_file
+    # endregion
 
+    # region Private methods
     def _build_report_filename(self) -> str:
         """Return a filename like inventory_2026-11-17_1337.csv."""
         timestamp = datetime.now().strftime(_FILENAME_TIMESTAMP_FORMAT)
         return f"inventory_{timestamp}.csv"
+    # endregion
