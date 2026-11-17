@@ -17,6 +17,7 @@ _LAST_CHECKED_FORMAT = "%Y-%m-%d %H:%M"
 class ServerChecker:
     """Checks whether servers respond and updates their status."""
 
+    # region Public methods
     def build_ping_command(self, address: str) -> list[str]:
         """Return the ping command as a list, so the address is never parsed by a shell."""
         return ["ping", "-c", _PING_PACKET_COUNT, "-W", _PING_TIMEOUT_SECONDS, address]
@@ -53,3 +54,4 @@ class ServerChecker:
                 all_servers_up = False
 
         return all_servers_up
+    # endregion
