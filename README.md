@@ -298,3 +298,50 @@ the terminal:
 ```bash
 python3 main.py --list --verbose > servers.txt
 ```
+
+## Using it in scripts and pipelines
+
+In command-line mode the **exit code** is the result. A script or a CI/CD
+pipeline doesn't need to read the text output; it only checks the exit code.
+`0` means everything went well, and `1` means at least one checked server is
+down or doesn't exist. All codes are listed under [Exit codes](#exit-codes).
+
+See the exit code of the last command:
+
+```bash
+python3 main.py --check-all
+echo $?
+```
+
+React to it in a bash script:
+
+```bash
+#!/usr/bin/env bash
+cd /opt/Server-Inventory-Tool
+
+python3 main.py --check-all > /dev/null
+exit_code=$?
+
+if [ "$exit_code" -eq 0 ]; then
+    echo "All servers are up"
+elif [ "$exit_code" -eq 1 ]; then
+    echo "At least one server is down"
+else
+    echo "Server Inventory Tool failed with exit code $exit_code"
+fi
+```
+
+Run a nightly check and report with cron (02:00 every night). `;` runs the
+export even when the check finds a server that is down:
+
+```bash
+0 2 * * * cd /opt/Server-Inventory-Tool && python3 main.py --check-all; python3 main.py --export
+```
+
+In a CI/CD pipeline, a step fails when its command exits with anything other
+than `0`. Example for GitHub Actions:
+
+```yaml
+- name: Check that all servers respond
+  run: python3 main.py --check-all
+```
