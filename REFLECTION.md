@@ -51,6 +51,7 @@
 - Cons: the flags are Linux-specific (`-W` means milliseconds on macOS, and Windows uses different flags). Some networks block ping, so "down" can mean "blocked" rather than "offline".
 - `-W 2` timeout: without it, unreachable addresses like `192.0.2.10` hang for a long time.
 - Relying on an external command means it may not exist: slim Docker images don't include `ping`. Found in the code review; `_ping()` now catches `FileNotFoundError` and raises `PingNotAvailableError` (exit code 7) instead of crashing with a traceback.
+- Writing the README's installation section made the portability problem concrete: on macOS the 2 s timeout becomes 2 ms, and on Windows `ping -c` doesn't exist, so every check shows `down`. I documented Linux as supported, Windows through WSL (as the assignment suggests) and macOS with a limitation. Would change: choose the flags with `platform.system()` (`-c`/`-W` on Linux, `-c`/`-t` on macOS, `-n`/`-w` on Windows) in `_build_ping_command()`.
 
 ### Sending the command to `subprocess.run()` as a list **[VG2 list]**
 - Chose: `_build_ping_command()` returns `["ping", "-c", "1", "-W", "2", address]`.
@@ -126,10 +127,13 @@
 - `main` / `develop` / `feature/*` branches, every change merged through a PR with a description and test table.
 - One file per commit, so the history shows the project being built step by step.
 - Merging `develop` straight into `main` early on was a mistake; fixed by switching to PRs.
+- The README is written as a user guide (install, menu, CLI, pipelines, exit codes) rather than as course documentation, with the assignment-specific parts (Swedish → English name table, VG extras) in a separate section at the end. One document serves both a user and the teacher.
+- Every command in the README was run before merging, so the documented exit codes and verbose output match the real program.
 
 ### Testing approach
 - Manual tests on a copy of `servers.json`, never on the real file. Fakes for `ping` (`true`/`false` commands) to test the logic without the network.
 - No automated tests yet. With more time: `pytest` with temporary files (`tmp_path`) and a fake checker.
+- The reviews that found real problems were the ones that tested *outside* the happy path: `ping` missing (PATH without ping), a data file in a folder that doesn't exist, read-only files, Ctrl+C sent as a signal. A first Ctrl+C test was misleading (a background job in a non-interactive shell ignores SIGINT), which is a reminder to check that a test really tests what it claims.
 
 ### Text UI (`ui/menu.py`, `ui/display.py`)
 - Menu choices live in one dict: choice -> (text, handler method). Adding a choice is one line, and the printed menu and the handling can't drift apart. Alternative: a long `if/elif` chain (what `main.py` uses for the CLI, where argparse already limits the options).
@@ -138,7 +142,21 @@
 - Progress while checking all servers: the menu was silent until every check finished (up to 2 s per unreachable server). Options: (A) loop in the menu (duplicates logic, saves once per server), (B) an optional callback `on_server_checked(server, is_up)` passed through `InventoryService` to `ServerChecker`, (C) a generator that yields results (saving becomes awkward if the caller stops early). Chose B: services still never print, the loop and the single save stay in one place. Like passing an `Action<T1, T2>` in C#.
 - `main.create_services()` is the composition root: the only place where objects are created and connected (manual dependency injection, like a DI container in `Program.cs`).
 - `Checking nope...` prints before "No server named 'nope' exists." because `check_server()` does lookup and check in one call. Small UX cost of keeping the menu free of rules.
-- Not handled yet (the "Säkrare inmatning" VG extra): empty names/addresses are accepted, names with spaces are allowed, and Ctrl+C at a prompt ends the program with a traceback (`KeyboardInterrupt`).
+- Not handled yet (the "Säkrare inmatning" VG extra): empty names/addresses are accepted, and names with spaces are allowed. (Ctrl+C and Ctrl+D at a prompt are handled since the exit code work: exit code 130 and a clean quit.)
+
+### Python 3.10 as the minimum version
+- The code uses the `X | None` syntax in type hints (`find_by_name() -> dict | None`, `process_data(env: str | None, ...)`). Those hints are evaluated when the function is defined, so the program won't even start on Python 3.9 or older.
+- Alternatives: `Optional[dict]` from `typing`, or `from __future__ import annotations` at the top of each file. Both work on older versions.
+- Chose the modern syntax because it reads like C#'s `string?`, and Python 3.10 has been out since 2021. Documented as a requirement in the README.
+- Would change: if the tool had to run on an older server (e.g. an old LTS distribution), use `Optional[...]` or the `__future__` import.
+
+### Using an AI assistant as a pair programmer
+- Chose: Claude Code as a pair programmer, with me in the tech lead / reviewer role (details in `PRESENTATION.md`). Reason: I already program professionally in C#, so the learning goal is Python as a language, not programming itself.
+- Alternatives: write everything myself and only look things up; or use AI as a search engine for single questions.
+- Pros: faster progress under a tight deadline; constant explanations with C# comparisons were a direct way to learn Python idioms; requirement-by-requirement reviews caught real problems (the `--lista --miljo` mapping, crash cases).
+- Cons / risks: it's easy to accept code without understanding it. Mitigations I used: one file or one logical change per commit, an explanation of every piece of code, my own review before every merge, and questioning design choices (e.g. why `save()` was public, which led to a better design).
+- Sometimes the AI was wrong or too fast: it once claimed a test had been run in a terminal when it hadn't (corrected in the PR), and early on it changed several files at once, which made it hard to follow. Setting rules (one file at a time, public before private) fixed that.
+- Would change: as a beginner in programming, I would write more of the code myself first and use AI mainly for review.
 
 ## VG3: a larger environment (1 000 servers, nightly pipeline)
 - **Check time:** checks run one at a time with a 2 s timeout. 1 000 servers, many down → up to ~33 minutes. Fix: run checks in parallel (`concurrent.futures.ThreadPoolExecutor`) or with `asyncio`.
@@ -149,3 +167,5 @@
 - **Reliability:** ping is often blocked; add TCP or HTTP checks (the HTTP VG extra), and retries.
 - **Reports:** add seconds to the filename, or a run id, to avoid overwrites; clean up old reports.
 - **Config:** a config file and env vars for timeouts and paths instead of constants in code.
+- **Runner environment:** CI images are often minimal: they may lack `ping` (now exit code 7 instead of a crash) or have an old Python (needs 3.10+). A container image with both pinned would make nightly runs predictable.
+- **Data file in git:** `servers.json` is committed, and every check changes it. A nightly job would either produce a commit every night or leave the repo dirty. Better: keep the live data file outside the repo (`INVENTORY_DATA_FILE=/srv/inventory/servers.json`) and only keep example data in git.
