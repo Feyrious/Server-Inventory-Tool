@@ -1,9 +1,11 @@
-"""Business rules for the server list: find, add, remove and filter servers.
+"""Business rules for the server list: find, add, remove, filter and check servers.
 
-Responsibility: the rules for the list of server dictionaries. No input()
-or print(), so the menu and the CLI share the same rules.
+Responsibility: the rules for the list of server dictionaries. Every change
+to the list goes through this class and is saved right away. No input() or
+print(), so the menu and the CLI share the same rules.
 """
 
+from server_inventory.services.server_checker import ServerChecker
 from server_inventory.storage.server_repository import ServerRepository
 
 VALID_ENVIRONMENTS = ["dev", "test", "prod"]
@@ -18,8 +20,9 @@ def is_valid_environment(env: str) -> bool:
 class InventoryService:
     """Holds the servers while the program runs and saves every change."""
 
-    def __init__(self, repository: ServerRepository):
+    def __init__(self, repository: ServerRepository, checker: ServerChecker):
         self.repository = repository
+        self.checker = checker
         self.servers = repository.load()
 
     # region Public methods
@@ -57,7 +60,7 @@ class InventoryService:
             "last_checked": "",
         }
         self.servers.append(new_server)
-        self.save()
+        self._save()
         return new_server
 
     def remove_server(self, name: str) -> dict:
@@ -65,16 +68,38 @@ class InventoryService:
 
         Raises ValueError if no server has that name.
         """
+        server = self._get_existing_server(name)
+        self.servers.remove(server)
+        self._save()
+        return server
+
+    def check_server(self, name: str) -> bool:
+        """Check one server, save the new status and return True if it is up (G9, G10).
+
+        Raises ValueError if no server has that name.
+        """
+        server = self._get_existing_server(name)
+        is_up = self.checker.check_server(server)
+        self._save()
+        return is_up
+
+    def check_all_servers(self) -> bool:
+        """Check every server, save the new statuses and return True if all are up (G10, G16)."""
+        all_servers_up = self.checker.check_all(self.servers)
+        self._save()
+        return all_servers_up
+    # endregion
+
+    # region Private methods
+    def _get_existing_server(self, name: str) -> dict:
+        """Return the server with this name, or raise ValueError if there is none."""
         server = self.find_by_name(name)
 
         if server is None:
             raise ValueError(f"No server named '{name}' exists.")
 
-        self.servers.remove(server)
-        self.save()
         return server
 
-    def save(self) -> None:
-        """Save the current server list, e.g. after a status check (G5, G10)."""
+    def _save(self) -> None:
         self.repository.save(self.servers)
     # endregion
