@@ -345,3 +345,25 @@ than `0`. Example for GitHub Actions:
 - name: Check that all servers respond
   run: python3 main.py --check-all
 ```
+
+## Exit codes
+
+| Code | Name | When | What to do |
+|---|---|---|---|
+| `0` | `OK` | Everything went well | Nothing |
+| `1` | `CHECK_FAILED` | `--check` or `--check-all` found a server that is down, or `--check` was given a name that doesn't exist | Look at the printed table, or the message, to see which server |
+| `2` | `INVALID_ARGUMENTS` | Unknown or conflicting flags, e.g. `--list --check-all`, or `--env` without `--list` | Run `python3 main.py --help` |
+| `3` | `DATA_FILE_INVALID` | The data file is not valid JSON, or doesn't contain a list of servers | Fix the file, see [Data file format](#data-file-format) |
+| `4` | `DATA_FILE_UNREADABLE` | The data file exists but can't be read, e.g. no permission | Check the file's permissions |
+| `5` | `DATA_FILE_NOT_SAVED` | The data file can't be written, e.g. a read-only folder | Check the permissions of the file and its folder |
+| `6` | `REPORT_NOT_SAVED` | The CSV report can't be written to `reports/` | Check the permissions of the `reports/` folder |
+| `7` | `PING_NOT_AVAILABLE` | The `ping` command is not installed | Install it, see [Installation](#installation) |
+| `130` | `INTERRUPTED` | The program was stopped with Ctrl+C | Nothing; this is the standard code for Ctrl+C |
+
+Error messages are always printed to *stderr*. With `--verbose`, the code and
+its name are also printed when the program ends, for example
+`Process finished with exit code 3 (DATA_FILE_INVALID)`.
+
+In the text menu, problems such as an unknown server name are shown as a
+message and the menu keeps running. Pressing Ctrl+D at a menu prompt quits
+like choosing `0` (exit code `0`).
