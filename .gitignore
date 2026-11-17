@@ -223,4 +223,5 @@ __marimo__/
 .idea/
 
 # Server Inventory Tool: generated CSV/text reports
-reports/
+reports/*
+!reports/report.example.csv
