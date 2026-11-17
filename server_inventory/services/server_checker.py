@@ -18,25 +18,12 @@ class ServerChecker:
     """Checks whether servers respond and updates their status."""
 
     # region Public methods
-    def build_ping_command(self, address: str) -> list[str]:
-        """Return the ping command as a list, so the address is never parsed by a shell."""
-        return ["ping", "-c", _PING_PACKET_COUNT, "-W", _PING_TIMEOUT_SECONDS, address]
-
-    def ping(self, address: str) -> bool:
-        """Return True if the address answers ping, judged by the exit code (G9)."""
-        result = subprocess.run(
-            self.build_ping_command(address),
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        return result.returncode == 0
-
     def check_server(self, server: dict) -> bool:
         """Ping one server, update its status and last_checked, and return True if it is up (G10).
 
         The server dict is changed in place; the caller saves the list afterwards.
         """
-        is_up = self.ping(server["address"])
+        is_up = self._ping(server["address"])
 
         server["status"] = "up" if is_up else "down"
         server["last_checked"] = datetime.now().strftime(_LAST_CHECKED_FORMAT)
@@ -54,4 +41,19 @@ class ServerChecker:
                 all_servers_up = False
 
         return all_servers_up
+    # endregion
+
+    # region Private methods
+    def _build_ping_command(self, address: str) -> list[str]:
+        """Return the ping command as a list, so the address is never parsed by a shell."""
+        return ["ping", "-c", _PING_PACKET_COUNT, "-W", _PING_TIMEOUT_SECONDS, address]
+
+    def _ping(self, address: str) -> bool:
+        """Return True if the address answers ping, judged by the exit code (G9)."""
+        result = subprocess.run(
+            self._build_ping_command(address),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        return result.returncode == 0
     # endregion
