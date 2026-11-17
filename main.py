@@ -2,8 +2,7 @@
 
 import argparse
 
-import envconfig
-import statuscode
+from server_inventory import config, exit_status
 
 
 def main():
@@ -70,7 +69,7 @@ def main():
 
 def process_data(list_all: bool, list_env: str | None, check: str | None, check_all: bool, export: bool, verbose: bool):
     if verbose:
-        envconfig.IS_VERBOSE = True
+        config.IS_VERBOSE = True
 
     if list_all:
         # List all registered servers
@@ -95,4 +94,4 @@ def process_data(list_all: bool, list_env: str | None, check: str | None, check_
 # Script entry point
 if __name__ == "__main__":
     main()
-    statuscode.status_ok()
+    exit_status.status_ok()
