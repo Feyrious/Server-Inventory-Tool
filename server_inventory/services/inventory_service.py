@@ -7,6 +7,7 @@ print(), so the menu and the CLI share the same rules.
 
 from server_inventory.services.server_checker import ServerChecker, ServerCheckedCallback
 from server_inventory.storage.server_repository import ServerRepository
+from server_inventory.verbose import log_verbose
 
 VALID_ENVIRONMENTS = ["dev", "test", "prod"]
 VALID_STATUSES = ["up", "down", "unknown"]
@@ -60,6 +61,7 @@ class InventoryService:
             "last_checked": "",
         }
         self.servers.append(new_server)
+        log_verbose(f"Added server '{name}' ({address}, {env})")
         self._save()
         return new_server
 
@@ -70,6 +72,7 @@ class InventoryService:
         """
         server = self._get_existing_server(name)
         self.servers.remove(server)
+        log_verbose(f"Removed server '{name}'")
         self._save()
         return server
 
@@ -79,6 +82,7 @@ class InventoryService:
         Raises ValueError if no server has that name.
         """
         server = self._get_existing_server(name)
+        log_verbose(f"Checking server '{name}' at {server['address']}")
         is_up = self.checker.check_server(server)
         self._save()
         return is_up
@@ -88,6 +92,7 @@ class InventoryService:
 
         If on_server_checked is given, it is called after each server is checked.
         """
+        log_verbose(f"Checking all {len(self.servers)} servers")
         all_servers_up = self.checker.check_all(self.servers, on_server_checked)
         self._save()
         return all_servers_up

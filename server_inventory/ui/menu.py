@@ -4,6 +4,7 @@ Responsibility: talking to the user (input/print) and calling the services.
 Contains no business rules itself.
 """
 
+from server_inventory.errors import PingNotAvailableError
 from server_inventory.services.inventory_service import (
     VALID_ENVIRONMENTS,
     InventoryService,
@@ -11,6 +12,7 @@ from server_inventory.services.inventory_service import (
 )
 from server_inventory.storage.report_exporter import ReportExporter
 from server_inventory.ui.display import print_server_table
+from server_inventory.verbose import log_verbose
 
 _QUIT_CHOICE = "0"
 _PROD_ENVIRONMENT = "prod"
@@ -41,6 +43,7 @@ class Menu:
         while True:
             self._print_menu()
             choice = input("Choose an option: ").strip()
+            log_verbose(f"Menu choice: '{choice}'")
 
             if choice == _QUIT_CHOICE:
                 print("Goodbye!")
@@ -109,7 +112,7 @@ class Menu:
 
         try:
             is_up = self.inventory.check_server(name)
-        except ValueError as error:
+        except (ValueError, PingNotAvailableError) as error:
             print(error)
             return
 
@@ -117,7 +120,13 @@ class Menu:
 
     def _check_all_servers(self) -> None:
         print("Checking all servers, this can take a few seconds...")
-        self.inventory.check_all_servers(on_server_checked=self._print_check_result)
+
+        try:
+            self.inventory.check_all_servers(on_server_checked=self._print_check_result)
+        except PingNotAvailableError as error:
+            print(error)
+            return
+
         print()
         print_server_table(self.inventory.get_all_servers())
 

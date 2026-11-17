@@ -7,6 +7,13 @@ or print() here, so both the text menu and the CLI can reuse it.
 import json
 from pathlib import Path
 
+from server_inventory.errors import (
+    DataFileInvalidError,
+    DataFileNotSavedError,
+    DataFileUnreadableError,
+)
+from server_inventory.verbose import log_verbose
+
 
 class ServerRepository:
     """Reads and writes the list of server dictionaries to a JSON file."""
@@ -16,16 +23,50 @@ class ServerRepository:
 
     # region Public methods
     def load(self) -> list[dict]:
-        """Return all servers from the data file, or an empty list if the file is missing (G5, G7)."""
+        """Return all servers from the data file, or [] if the file is missing (G5, G7).
+
+        Raises DataFileInvalidError or DataFileUnreadableError if the file can't be used.
+        """
         if not self.data_file.exists():
+            log_verbose(f"Data file {self.data_file} not found, starting with an empty list")
             return []
 
-        with open(self.data_file, "r", encoding="utf-8") as file:
-            return json.load(file)
+        try:
+            with open(self.data_file, "r", encoding="utf-8") as file:
+                servers = json.load(file)
+        except (json.JSONDecodeError, UnicodeDecodeError) as error:
+            raise DataFileInvalidError(
+                f"The data file {self.data_file} is not valid JSON."
+            ) from error
+        except OSError as error:
+            raise DataFileUnreadableError(
+                f"Could not read the data file {self.data_file}: {error.strerror}."
+            ) from error
+
+        if not isinstance(servers, list):
+            raise DataFileInvalidError(
+                f"The data file {self.data_file} must contain a list of servers."
+            )
+
+        log_verbose(f"Loaded {len(servers)} servers from {self.data_file}")
+        return servers
 
     def save(self, servers: list[dict]) -> None:
-        """Write all servers to the data file, replacing its previous content (G5)."""
-        with open(self.data_file, "w", encoding="utf-8") as file:
-            json.dump(servers, file, indent=2, ensure_ascii=False)
-            file.write("\n")
+        """Write all servers to the data file, replacing its previous content (G5).
+
+        Raises DataFileNotSavedError if the file can't be written.
+        """
+        try:
+            # The data file may point to a folder that doesn't exist yet
+            self.data_file.parent.mkdir(parents=True, exist_ok=True)
+
+            with open(self.data_file, "w", encoding="utf-8") as file:
+                json.dump(servers, file, indent=2, ensure_ascii=False)
+                file.write("\n")
+
+            log_verbose(f"Saved {len(servers)} servers to {self.data_file}")
+        except OSError as error:
+            raise DataFileNotSavedError(
+                f"Could not save the data file {self.data_file}: {error.strerror}."
+            ) from error
     # endregion

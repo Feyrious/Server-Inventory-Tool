@@ -8,6 +8,9 @@ import subprocess
 from collections.abc import Callable
 from datetime import datetime
 
+from server_inventory.errors import PingNotAvailableError
+from server_inventory.verbose import log_verbose
+
 # Linux ping flags: -c = number of packets, -W = seconds to wait for a reply.
 # Without a timeout an unreachable address can hang for a long time.
 _PING_PACKET_COUNT = "1"
@@ -66,11 +69,25 @@ class ServerChecker:
         return ["ping", "-c", _PING_PACKET_COUNT, "-W", _PING_TIMEOUT_SECONDS, address]
 
     def _ping(self, address: str) -> bool:
-        """Return True if the address answers ping, judged by the exit code (G9)."""
-        result = subprocess.run(
-            self._build_ping_command(address),
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
+        """Return True if the address answers ping, judged by the exit code (G9).
+
+        Raises PingNotAvailableError if the ping command is not installed.
+        """
+        command = self._build_ping_command(address)
+        log_verbose(f"Running command: {' '.join(command)}")
+
+        try:
+            result = subprocess.run(
+                command,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except FileNotFoundError:
+            raise PingNotAvailableError(
+                "The 'ping' command was not found. "
+                "Install it (e.g. the iputils-ping package) to check servers."
+            ) from None
+
+        log_verbose(f"ping exited with code {result.returncode} for {address}")
         return result.returncode == 0
     # endregion
