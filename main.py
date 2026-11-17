@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
 
 import argparse
+import json
 
 from server_inventory import config, exit_status
+from server_inventory.services.inventory_service import VALID_ENVIRONMENTS, InventoryService
+from server_inventory.services.server_checker import ServerChecker
+from server_inventory.storage.report_exporter import ReportExporter
+from server_inventory.storage.server_repository import ServerRepository
+from server_inventory.ui.menu import Menu
 
 
 def main():
@@ -23,7 +29,7 @@ def main():
     # Flag to list all servers with a specific environment
     actions.add_argument(
         "-e", "--list-env",
-        choices=["dev", "test", "prod"],
+        choices=VALID_ENVIRONMENTS,
         help="List all servers in provided environment"
     )
 
@@ -71,6 +77,8 @@ def process_data(list_all: bool, list_env: str | None, check: str | None, check_
     if verbose:
         config.IS_VERBOSE = True
 
+    inventory, exporter = create_services()
+
     if list_all:
         # List all registered servers
         print("Server Inventory Tool CLI: List All Servers")
@@ -87,8 +95,18 @@ def process_data(list_all: bool, list_env: str | None, check: str | None, check_
         # Export report
         print("Server Inventory Tool CLI: Generate server status report")
     else:
-        # Present tool menu
-        print("Server Inventory Tool Menu")
+        Menu(inventory, exporter).run()
+
+
+def create_services() -> tuple[InventoryService, ReportExporter]:
+    """Create the services and connect them (manual dependency injection)."""
+    data_file = config.get_data_file_path()
+
+    try:
+        inventory = InventoryService(ServerRepository(data_file), ServerChecker())
+        return inventory, ReportExporter(config.REPORTS_DIRECTORY)
+    except json.JSONDecodeError:
+        exit_status.error_read_file(str(data_file))
 
 
 # Script entry point
