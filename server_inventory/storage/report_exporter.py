@@ -3,8 +3,34 @@
 Responsibility: writing report files to the reports folder.
 """
 
-# TODO: class ReportExporter
-#       __init__(report_dir: Path)
-#       export_csv(servers: list[dict]) -> Path
-#           reports/inventory_YYYY-MM-DD_HHMM.csv with a header row,
-#           creates the folder if it is missing (G8)
+import csv
+from datetime import datetime
+from pathlib import Path
+
+REPORT_COLUMNS = ["name", "address", "env", "role", "status", "last_checked"]
+_FILENAME_TIMESTAMP_FORMAT = "%Y-%m-%d_%H%M"
+
+
+class ReportExporter:
+    """Writes server reports to files in a reports folder."""
+
+    def __init__(self, reports_directory: Path):
+        self.reports_directory = reports_directory
+
+    def export_csv(self, servers: list[dict]) -> Path:
+        """Write all servers to a timestamped CSV file and return its path (G8)."""
+        self.reports_directory.mkdir(parents=True, exist_ok=True)
+        report_file = self.reports_directory / self._build_report_filename()
+
+        # newline="" stops Windows from adding an empty line between rows
+        with open(report_file, "w", encoding="utf-8", newline="") as file:
+            writer = csv.DictWriter(file, fieldnames=REPORT_COLUMNS, extrasaction="ignore")
+            writer.writeheader()
+            writer.writerows(servers)
+
+        return report_file
+
+    def _build_report_filename(self) -> str:
+        """Return a filename like inventory_2026-11-17_1337.csv."""
+        timestamp = datetime.now().strftime(_FILENAME_TIMESTAMP_FORMAT)
+        return f"inventory_{timestamp}.csv"
