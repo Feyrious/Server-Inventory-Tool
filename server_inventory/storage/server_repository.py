@@ -14,6 +14,7 @@ class ServerRepository:
     def __init__(self, data_file: Path):
         self.data_file = data_file
 
+    # region Public methods
     def load(self) -> list[dict]:
         """Return all servers from the data file, or an empty list if the file is missing (G5, G7)."""
         if not self.data_file.exists():
@@ -27,3 +28,4 @@ class ServerRepository:
         with open(self.data_file, "w", encoding="utf-8") as file:
             json.dump(servers, file, indent=2, ensure_ascii=False)
             file.write("\n")
+    # endregion
