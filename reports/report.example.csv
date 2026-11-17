@@ -3,4 +3,4 @@ web01,example.com,prod,web-server,up,2026-11-17 15:19
 db01,127.0.0.1,prod,database,up,2026-11-17 15:19
 test01,192.0.2.10,test,test-server,down,2026-11-17 15:19
 dev01,localhost,dev,dev-server,up,2026-11-17 15:19
-web02,197.0.0.5,test,integration-testing,down,2026-11-17 15:19
+web02,197.0.0.5,test,inter-testing,down,2026-11-17 15:19
