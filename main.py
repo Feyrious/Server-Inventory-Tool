@@ -2,6 +2,10 @@
 
 import argparse
 
+import envconfig
+import statuscode
+
+
 def main():
     # Setting up CLI parameter arguments
     parser = argparse.ArgumentParser(
@@ -66,8 +70,7 @@ def main():
 
 def process_data(list_all: bool, list_env: str | None, check: str | None, check_all: bool, export: bool, verbose: bool):
     if verbose:
-        # Set Logging to Verbose
-        print("Verbose Mode On")
+        envconfig.IS_VERBOSE = True
 
     if list_all:
         # List all registered servers
@@ -92,3 +95,4 @@ def process_data(list_all: bool, list_env: str | None, check: str | None, check_
 # Script entry point
 if __name__ == "__main__":
     main()
+    statuscode.status_ok()
