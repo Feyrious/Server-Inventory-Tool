@@ -32,3 +32,60 @@ The tool is written in Python and uses only the standard library.
 | `ping` | Installed on most systems. Used to check if servers respond. |
 | Third-party packages | None. Only the Python standard library is used. |
 | Operating system | Linux. Windows through WSL. macOS with limitations, see below. |
+
+## Installation
+
+There is nothing to build or install with `pip`. You only need Python, `ping`
+and a copy of the project.
+
+### Linux
+
+1. Check that Python 3.10 or newer and `ping` are installed:
+
+   ```bash
+   python3 --version
+   ping -c 1 127.0.0.1
+   ```
+
+   If something is missing, install it with your package manager:
+
+   ```bash
+   # Debian / Ubuntu
+   sudo apt install python3 iputils-ping
+
+   # Fedora
+   sudo dnf install python3 iputils
+   ```
+
+2. Get the project:
+
+   ```bash
+   git clone https://github.com/Feyrious/Server-Inventory-Tool.git
+   cd Server-Inventory-Tool
+   ```
+
+### Windows (through WSL)
+
+The server checks use the Linux version of `ping`, whose flags differ from
+the Windows `ping`. Run the tool in WSL (Windows Subsystem for Linux):
+
+1. Open PowerShell as administrator and install WSL with Ubuntu:
+
+   ```powershell
+   wsl --install
+   ```
+
+2. Restart if asked, open **Ubuntu** from the Start menu, and follow the
+   [Linux](#linux) steps inside it.
+
+### macOS
+
+Python can be installed from [python.org](https://www.python.org/downloads/)
+or with Homebrew (`brew install python`). `ping` is already installed. Then
+get the project as in step 2 of the [Linux](#linux) steps.
+
+> **Limitation:** on macOS, `ping -W` means milliseconds instead of seconds,
+> so the 2-second timeout the tool uses becomes 2 ms. Listing, adding,
+> removing and exporting work normally, but checks of remote servers will
+> usually show `down`. For reliable checks, run the tool on Linux or in a
+> Linux container.
