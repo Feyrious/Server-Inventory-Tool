@@ -102,3 +102,91 @@ python3 main.py --check-all      # check every server, exit code 0 if all are up
 
 The project comes with example servers in `servers.json`, so every command
 works right away.
+
+## Configuration
+
+### Choosing the data file: `INVENTORY_DATA_FILE`
+
+The servers are stored in a JSON file. Which file is used is decided by the
+environment variable `INVENTORY_DATA_FILE`:
+
+| `INVENTORY_DATA_FILE` | File used |
+|---|---|
+| Not set (or empty) | `servers.json` in the project folder, wherever you run the command from |
+| Set to a path | That path. A relative path is resolved from the folder you run the command in. |
+
+Set it for a single run:
+
+```bash
+INVENTORY_DATA_FILE=test-servers.json python3 main.py --list
+```
+
+Or for the whole terminal session:
+
+```bash
+export INVENTORY_DATA_FILE=/srv/inventory/servers.json
+python3 main.py --list
+```
+
+If the file doesn't exist, the tool starts with an empty list and creates the
+file (and its folder) the first time something is saved.
+
+Run with `--verbose` to see which data file is used.
+
+### Using a `.env` file
+
+`.env.example` lists every environment variable the tool reads, with its
+default value. Copy it and change what you need:
+
+```bash
+cp .env.example .env
+```
+
+Python does not read `.env` files by itself, so load it into your shell
+before running the tool:
+
+```bash
+set -a; source .env; set +a
+python3 main.py
+```
+
+`.env` is ignored by git, so your local settings are never committed.
+
+### Data file format
+
+The data file contains a JSON list with one object per server:
+
+```json
+[
+  {
+    "name": "web01",
+    "address": "example.com",
+    "env": "prod",
+    "role": "web-server",
+    "status": "up",
+    "last_checked": "2026-11-17 15:19"
+  }
+]
+```
+
+| Field | Meaning |
+|---|---|
+| `name` | Unique name of the server |
+| `address` | Hostname or IP address that is pinged |
+| `env` | Environment: `dev`, `test` or `prod` |
+| `role` | Free text, e.g. `web-server` or `database` |
+| `status` | `up`, `down` or `unknown` (new servers are always `unknown`) |
+| `last_checked` | Time of the last check as `YYYY-MM-DD HH:MM`, or `""` if never checked |
+
+The file is saved after every change, so it always matches what the tool
+shows.
+
+### Reports
+
+CSV reports are written to the `reports/` folder in the project, which is
+created automatically. Each file is named after the time it was created, for
+example `reports/inventory_2026-11-17_1544.csv`. The first line is a header
+row with the field names above.
+
+See [`reports/report.example.csv`](reports/report.example.csv) for an example.
+Generated reports are ignored by git.
