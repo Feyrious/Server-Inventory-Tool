@@ -22,6 +22,7 @@ class InventoryService:
         self.repository = repository
         self.servers = repository.load()
 
+    # region Public methods
     def get_all_servers(self) -> list[dict]:
         return self.servers
 
@@ -76,3 +77,4 @@ class InventoryService:
     def save(self) -> None:
         """Save the current server list, e.g. after a status check (G5, G10)."""
         self.repository.save(self.servers)
+    # endregion
