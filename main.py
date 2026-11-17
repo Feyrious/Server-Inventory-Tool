@@ -8,6 +8,7 @@ from server_inventory.services.inventory_service import VALID_ENVIRONMENTS, Inve
 from server_inventory.services.server_checker import ServerChecker
 from server_inventory.storage.report_exporter import ReportExporter
 from server_inventory.storage.server_repository import ServerRepository
+from server_inventory.ui.display import print_server_table
 from server_inventory.ui.menu import Menu
 
 
@@ -64,7 +65,7 @@ def main():
     args = parser.parse_args()
 
     # Route the parsed values to the application
-    process_data(
+    is_success = process_data(
         list_all=args.list_all,
         list_env=args.list_env,
         check=args.check,
@@ -73,29 +74,49 @@ def main():
         verbose=args.verbose
     )
 
-def process_data(list_all: bool, list_env: str | None, check: str | None, check_all: bool, export: bool, verbose: bool):
+    # The exit code is the result for scripts and pipelines (G16)
+    if is_success:
+        exit_status.status_ok()
+    else:
+        exit_status.status_failed()
+
+
+def process_data(list_all: bool, list_env: str | None, check: str | None, check_all: bool, export: bool, verbose: bool) -> bool:
+    """Run the chosen action and return False if a check failed or the server does not exist."""
     if verbose:
         config.IS_VERBOSE = True
 
     inventory, exporter = create_services()
 
     if list_all:
-        # List all registered servers
-        print("Server Inventory Tool CLI: List All Servers")
+        print_server_table(inventory.get_all_servers())
     elif list_env:
-        # List all registered servers in environment
-        print(f"Server Inventory Tool CLI: List by Environment - {list_env}")
+        print_server_table(inventory.filter_by_environment(list_env))
     elif check:
-        # Check server status
-        print("Server Inventory Tool CLI: Check Server Status")
+        return check_one_server(inventory, check)
     elif check_all:
-        # Check status for all servers
-        print("Server Inventory Tool CLI: Check All Servers")
+        all_servers_up = inventory.check_all_servers()
+        print_server_table(inventory.get_all_servers())
+        return all_servers_up
     elif export:
-        # Export report
-        print("Server Inventory Tool CLI: Generate server status report")
+        report_file = exporter.export_csv(inventory.get_all_servers())
+        print(f"Report saved to {report_file}")
     else:
         Menu(inventory, exporter).run()
+
+    return True
+
+
+def check_one_server(inventory: InventoryService, name: str) -> bool:
+    """Check one server, print its row and return True if it is up."""
+    try:
+        is_up = inventory.check_server(name)
+    except ValueError as error:
+        print(error)
+        return False
+
+    print_server_table([inventory.find_by_name(name)])
+    return is_up
 
 
 def create_services() -> tuple[InventoryService, ReportExporter]:
@@ -112,4 +133,3 @@ def create_services() -> tuple[InventoryService, ReportExporter]:
 # Script entry point
 if __name__ == "__main__":
     main()
-    exit_status.status_ok()
