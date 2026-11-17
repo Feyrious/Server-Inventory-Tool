@@ -158,6 +158,11 @@
 - Sometimes the AI was wrong or too fast: it once claimed a test had been run in a terminal when it hadn't (corrected in the PR), and early on it changed several files at once, which made it hard to follow. Setting rules (one file at a time, public before private) fixed that.
 - Would change: as a beginner in programming, I would write more of the code myself first and use AI mainly for review.
 
+### Linking to code lines in `PRESENTATION.md`
+- Chose: relative links with line anchors (`server_checker.py#L41`), so each answer points straight at the code, as G20 asks.
+- Alternatives: link only to the file and name the function (never breaks); or GitHub permalinks pinned to a commit (never drift, but show old code after a fix).
+- Trade-off: relative line anchors drift when lines are added above them, so they have to be checked again after every code change. That's why they were added last, when the code was done.
+
 ## VG3: a larger environment (1 000 servers, nightly pipeline)
 - **Check time:** checks run one at a time with a 2 s timeout. 1 000 servers, many down → up to ~33 minutes. Fix: run checks in parallel (`concurrent.futures.ThreadPoolExecutor`) or with `asyncio`.
 - **Lookups:** `find_by_name()` is O(n); a dict index by name would make lookups instant.
