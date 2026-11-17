@@ -1,3 +1,8 @@
+"""Ending the program with the right exit code (G16).
+
+In verbose mode the exit code and any message are printed before exiting.
+"""
+
 import sys
 
 from server_inventory import config
@@ -15,7 +20,7 @@ def status_failed():
     sys.exit(1)
 
 
-def error_read_file(file_name):
+def error_read_file(file_name: str):
     _print_system_info(1, "Error reading file " + file_name)
     sys.exit(1)
 # endregion

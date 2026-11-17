@@ -16,7 +16,7 @@ class ServerRepository:
 
     # region Public methods
     def load(self) -> list[dict]:
-        """Return all servers from the data file, or an empty list if the file is missing (G5, G7)."""
+        """Return all servers from the data file, or [] if the file is missing (G5, G7)."""
         if not self.data_file.exists():
             return []
 
@@ -25,6 +25,9 @@ class ServerRepository:
 
     def save(self, servers: list[dict]) -> None:
         """Write all servers to the data file, replacing its previous content (G5)."""
+        # The data file may point to a folder that doesn't exist yet
+        self.data_file.parent.mkdir(parents=True, exist_ok=True)
+
         with open(self.data_file, "w", encoding="utf-8") as file:
             json.dump(servers, file, indent=2, ensure_ascii=False)
             file.write("\n")

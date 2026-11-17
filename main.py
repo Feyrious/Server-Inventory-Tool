@@ -4,6 +4,7 @@ import argparse
 import json
 
 from server_inventory import config, exit_status
+from server_inventory.errors import PingNotAvailableError
 from server_inventory.services.inventory_service import VALID_ENVIRONMENTS, InventoryService
 from server_inventory.services.server_checker import ServerChecker
 from server_inventory.storage.report_exporter import ReportExporter
@@ -20,18 +21,11 @@ def main():
 
     actions = parser.add_mutually_exclusive_group()
 
-    # Flag to list all servers in this tool
+    # Flag to list servers, optionally filtered with --env
     actions.add_argument(
-        "-l", "--list-all",
+        "-l", "--list",
         action="store_true",
-        help="List all servers"
-    )
-
-    # Flag to list all servers with a specific environment
-    actions.add_argument(
-        "-e", "--list-env",
-        choices=VALID_ENVIRONMENTS,
-        help="List all servers in provided environment"
+        help="List all servers, or only those in --env"
     )
 
     # Flag for checking status on specific server
@@ -55,6 +49,14 @@ def main():
         help="Generate server status report"
     )
 
+    # Filter for --list. It combines with --list, so it is outside the
+    # mutually exclusive group, like --verbose (G15: --list --env prod)
+    parser.add_argument(
+        "-e", "--env",
+        choices=VALID_ENVIRONMENTS,
+        help="Only list servers in this environment (use with --list)"
+    )
+
     # Flag for setting logging to verbose
     parser.add_argument(
         "-v", "--verbose",
@@ -64,15 +66,22 @@ def main():
 
     args = parser.parse_args()
 
+    if args.env and not args.list:
+        parser.error("--env can only be used together with --list")
+
     # Route the parsed values to the application
-    is_success = process_data(
-        list_all=args.list_all,
-        list_env=args.list_env,
-        check=args.check,
-        check_all=args.check_all,
-        export=args.export,
-        verbose=args.verbose
-    )
+    try:
+        is_success = process_data(
+            list_servers=args.list,
+            env=args.env,
+            check=args.check,
+            check_all=args.check_all,
+            export=args.export,
+            verbose=args.verbose
+        )
+    except PingNotAvailableError as error:
+        print(error)
+        is_success = False
 
     # The exit code is the result for scripts and pipelines (G16)
     if is_success:
@@ -81,17 +90,23 @@ def main():
         exit_status.status_failed()
 
 
-def process_data(list_all: bool, list_env: str | None, check: str | None, check_all: bool, export: bool, verbose: bool) -> bool:
+def process_data(
+    list_servers: bool,
+    env: str | None,
+    check: str | None,
+    check_all: bool,
+    export: bool,
+    verbose: bool,
+) -> bool:
     """Run the chosen action and return False if a check failed or the server does not exist."""
     if verbose:
         config.IS_VERBOSE = True
 
     inventory, exporter = create_services()
 
-    if list_all:
-        print_server_table(inventory.get_all_servers())
-    elif list_env:
-        print_server_table(inventory.filter_by_environment(list_env))
+    if list_servers:
+        servers = inventory.filter_by_environment(env) if env else inventory.get_all_servers()
+        print_server_table(servers)
     elif check:
         return check_one_server(inventory, check)
     elif check_all:
