@@ -1,10 +1,10 @@
 import sys
 
-import envconfig
+from server_inventory import config
 
 
 def print_system_info(code: int, message: str = ""):
-    if envconfig.IS_VERBOSE:
+    if config.IS_VERBOSE:
         if len(message) > 0:
             print(message)
 
