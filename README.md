@@ -23,3 +23,12 @@ the exit code tells you whether all servers are up.
   commands it runs
 
 The tool is written in Python and uses only the standard library.
+
+## Requirements
+
+| Requirement | Version / note |
+|---|---|
+| Python | **3.10 or newer** (the code uses the `X \| None` type syntax from 3.10) |
+| `ping` | Installed on most systems. Used to check if servers respond. |
+| Third-party packages | None. Only the Python standard library is used. |
+| Operating system | Linux. Windows through WSL. macOS with limitations, see below. |
