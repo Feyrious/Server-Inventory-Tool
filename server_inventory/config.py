@@ -22,7 +22,3 @@ def get_data_file_path() -> Path:
         return Path(data_file_from_env)
 
     return DEFAULT_DATA_FILE
-
-
-def new_line():
-    return os.linesep
