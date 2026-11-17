@@ -190,3 +190,53 @@ row with the field names above.
 
 See [`reports/report.example.csv`](reports/report.example.csv) for an example.
 Generated reports are ignored by git.
+
+## Using the text menu
+
+Start the tool without any flags:
+
+```bash
+python3 main.py
+```
+
+```text
+=== Server Inventory Tool ===
+1. Show all servers
+2. Show servers in an environment
+3. Add a server
+4. Remove a server
+5. Check a server
+6. Check all servers
+7. Export report as CSV
+0. Quit
+Choose an option:
+```
+
+| Choice | What it does |
+|---|---|
+| `1` | Shows all servers as a table |
+| `2` | Asks for an environment (`dev`, `test` or `prod`) and shows only those servers |
+| `3` | Asks for name, address, environment and role, and adds the server with status `unknown`. Names must be unique. |
+| `4` | Asks for a name and removes that server. Servers in `prod` need an extra confirmation: type `yes` to remove. |
+| `5` | Asks for a name, pings that server and shows whether it is up or down |
+| `6` | Pings every server, shows each result as soon as it is ready, then shows the updated table |
+| `7` | Writes a CSV report to `reports/` and shows its path |
+| `0` | Quits the program |
+
+The menu keeps running until you choose `0`. If you enter something that
+isn't a valid choice, an unknown server name or an invalid environment, the
+tool tells you and asks again. Every change (adding, removing, checking) is
+saved to the data file right away.
+
+Example table:
+
+```text
+Name           Address         Env   Role           Status    Last checked
+------------------------------------------------------------------------------
+web01          example.com     prod  web-server     up        2026-11-17 15:19
+db01           127.0.0.1       prod  database       up        2026-11-17 15:19
+test01         192.0.2.10      test  test-server    down      2026-11-17 15:19
+mail01         203.0.113.25    prod  mail-server    unknown   -
+```
+
+A `-` under *Last checked* means the server has never been checked.
