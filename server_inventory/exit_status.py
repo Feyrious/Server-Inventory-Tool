@@ -9,6 +9,12 @@ def status_ok():
     sys.exit(0)
 
 
+def status_failed():
+    """Exit with code 1, e.g. when a checked server is down or does not exist (G16)."""
+    _print_system_info(1)
+    sys.exit(1)
+
+
 def error_read_file(file_name):
     _print_system_info(1, "Error reading file " + file_name)
     sys.exit(1)
