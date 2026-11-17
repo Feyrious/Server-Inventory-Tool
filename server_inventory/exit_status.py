@@ -3,17 +3,23 @@ import sys
 from server_inventory import config
 
 
-def print_system_info(code: int, message: str = ""):
+# region Public functions
+def status_ok():
+    _print_system_info(0)
+    sys.exit(0)
+
+
+def error_read_file(file_name):
+    _print_system_info(1, "Error reading file " + file_name)
+    sys.exit(1)
+# endregion
+
+
+# region Private functions
+def _print_system_info(code: int, message: str = ""):
     if config.IS_VERBOSE:
         if len(message) > 0:
             print(message)
 
         print(f"Process finished with exit code {code}")
-
-def status_ok():
-    print_system_info(0)
-    sys.exit(0)
-
-def error_read_file(file_name):
-    print_system_info(1, "Error reading file " + file_name)
-    sys.exit(1)
+# endregion
