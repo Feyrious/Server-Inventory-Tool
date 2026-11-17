@@ -1,0 +1,114 @@
+[
+  {
+    "name": "web01",
+    "address": "example.com",
+    "env": "prod",
+    "role": "web-server",
+    "status": "up",
+    "last_checked": "2026-11-17 15:19"
+  },
+  {
+    "name": "db01",
+    "address": "127.0.0.1",
+    "env": "prod",
+    "role": "database",
+    "status": "up",
+    "last_checked": "2026-11-17 15:19"
+  },
+  {
+    "name": "test01",
+    "address": "192.0.2.10",
+    "env": "test",
+    "role": "test-server",
+    "status": "down",
+    "last_checked": "2026-11-17 15:19"
+  },
+  {
+    "name": "dev01",
+    "address": "localhost",
+    "env": "dev",
+    "role": "dev-server",
+    "status": "up",
+    "last_checked": "2026-11-17 15:19"
+  },
+  {
+    "name": "web02",
+    "address": "197.0.0.5",
+    "env": "test",
+    "role": "inter-testing",
+    "status": "down",
+    "last_checked": "2026-11-17 15:19"
+  },
+  {
+    "name": "web03",
+    "address": "example.org",
+    "env": "prod",
+    "role": "web-server",
+    "status": "up",
+    "last_checked": "2026-11-17 15:19"
+  },
+  {
+    "name": "db02",
+    "address": "127.0.0.2",
+    "env": "prod",
+    "role": "database",
+    "status": "up",
+    "last_checked": "2026-11-17 15:19"
+  },
+  {
+    "name": "cache01",
+    "address": "127.0.0.3",
+    "env": "prod",
+    "role": "cache-server",
+    "status": "up",
+    "last_checked": "2026-11-17 15:19"
+  },
+  {
+    "name": "lb01",
+    "address": "192.0.2.50",
+    "env": "prod",
+    "role": "load-balancer",
+    "status": "down",
+    "last_checked": "2026-11-17 15:19"
+  },
+  {
+    "name": "api01",
+    "address": "198.51.100.20",
+    "env": "prod",
+    "role": "api-server",
+    "status": "down",
+    "last_checked": "2026-11-17 15:19"
+  },
+  {
+    "name": "mail01",
+    "address": "203.0.113.25",
+    "env": "prod",
+    "role": "mail-server",
+    "status": "unknown",
+    "last_checked": ""
+  },
+  {
+    "name": "monitor01",
+    "address": "198.51.100.7",
+    "env": "test",
+    "role": "monitoring",
+    "status": "down",
+    "last_checked": "2026-11-17 15:19"
+  },
+  {
+    "name": "build01",
+    "address": "localhost",
+    "env": "dev",
+    "role": "ci-runner",
+    "status": "up",
+    "last_checked": "2026-11-17 15:19"
+  },
+  {
+    "name": "backup01",
+    "address": "203.0.113.40",
+    "env": "dev",
+    "role": "backup-server",
+    "status": "unknown",
+    "last_checked": ""
+  }
+]

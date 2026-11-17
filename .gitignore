@@ -221,3 +221,7 @@ __marimo__/
 
 # PyCharm
 .idea/
+
+# Server Inventory Tool: generated CSV/text reports
+reports/*
+!reports/report.example.csv
