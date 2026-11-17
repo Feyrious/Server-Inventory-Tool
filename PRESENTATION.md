@@ -206,7 +206,7 @@ that focus more on coding best practices.
 - **Python documentation** 
   - Using the official documentation to find information about commonly  
     used modules, how they work and how to use them.
-- **`ASSIGNMENT.md`**
+- **ASSIGNMENT.md**
   - Used as the base requirements and as a checklist when doing reviews.
 - **Claude Code (AI assistant)**
   - See *How AI was used in this project* above.
@@ -246,13 +246,3 @@ table maps the assignment's names to the ones used here:
 
 Beyond the requirements, the service rules live in their own module
 (`services/inventory_service.py`) so the menu and the command line share them.
-
-### Extras (VG1)
-
-| Extra | Where | How to use |
-|---|---|---|
-| `--verbose` | `server_inventory/verbose.py`, used throughout the code | Add `-v` to any command, see [Verbose mode](README.md#verbose-mode) |
-
-Also beyond the assignment: an exit code for every error scenario (see
-[Exit codes](README.md#exit-codes)) and live progress when checking all servers in the
-menu.
