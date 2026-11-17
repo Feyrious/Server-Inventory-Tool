@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 import argparse
-import json
 
-from server_inventory import config, exit_status
-from server_inventory.errors import PingNotAvailableError
+from server_inventory import config
+from server_inventory.errors import InventoryError
+from server_inventory.exit_status import ExitCode, exit_program
 from server_inventory.services.inventory_service import VALID_ENVIRONMENTS, InventoryService
 from server_inventory.services.server_checker import ServerChecker
 from server_inventory.storage.report_exporter import ReportExporter
@@ -69,7 +69,8 @@ def main():
     if args.env and not args.list:
         parser.error("--env can only be used together with --list")
 
-    # Route the parsed values to the application
+    # Route the parsed values to the application. Every error the program
+    # knows about ends here with its own exit code instead of a traceback.
     try:
         is_success = process_data(
             list_servers=args.list,
@@ -79,15 +80,18 @@ def main():
             export=args.export,
             verbose=args.verbose
         )
-    except PingNotAvailableError as error:
-        print(error)
-        is_success = False
+    except InventoryError as error:
+        exit_program(error.exit_code, str(error))
+    except KeyboardInterrupt:
+        print()
+        exit_program(ExitCode.INTERRUPTED, "Interrupted by the user.")
+    except EOFError:
+        # End of input (Ctrl+D) at a menu prompt counts as quitting
+        print()
+        exit_program(ExitCode.OK)
 
     # The exit code is the result for scripts and pipelines (G16)
-    if is_success:
-        exit_status.status_ok()
-    else:
-        exit_status.status_failed()
+    exit_program(ExitCode.OK if is_success else ExitCode.CHECK_FAILED)
 
 
 def process_data(
@@ -136,13 +140,9 @@ def check_one_server(inventory: InventoryService, name: str) -> bool:
 
 def create_services() -> tuple[InventoryService, ReportExporter]:
     """Create the services and connect them (manual dependency injection)."""
-    data_file = config.get_data_file_path()
-
-    try:
-        inventory = InventoryService(ServerRepository(data_file), ServerChecker())
-        return inventory, ReportExporter(config.REPORTS_DIRECTORY)
-    except json.JSONDecodeError:
-        exit_status.error_read_file(str(data_file))
+    repository = ServerRepository(config.get_data_file_path())
+    inventory = InventoryService(repository, ServerChecker())
+    return inventory, ReportExporter(config.REPORTS_DIRECTORY)
 
 
 # Script entry point
