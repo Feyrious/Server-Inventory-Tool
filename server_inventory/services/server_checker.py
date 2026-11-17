@@ -5,6 +5,7 @@ is written once here and reused by both the menu and the CLI (G18).
 """
 
 import subprocess
+from collections.abc import Callable
 from datetime import datetime
 
 # Linux ping flags: -c = number of packets, -W = seconds to wait for a reply.
@@ -12,6 +13,10 @@ from datetime import datetime
 _PING_PACKET_COUNT = "1"
 _PING_TIMEOUT_SECONDS = "2"
 _LAST_CHECKED_FORMAT = "%Y-%m-%d %H:%M"
+
+# A function that is called with (server, is_up) after each server is checked,
+# so a caller like the menu can show progress without this class printing.
+ServerCheckedCallback = Callable[[dict, bool], None]
 
 
 class ServerChecker:
@@ -30,15 +35,27 @@ class ServerChecker:
 
         return is_up
 
-    def check_all(self, servers: list[dict]) -> bool:
-        """Check every server and return True only if all of them are up (G16)."""
+    def check_all(
+        self,
+        servers: list[dict],
+        on_server_checked: ServerCheckedCallback | None = None,
+    ) -> bool:
+        """Check every server and return True only if all of them are up (G16).
+
+        If on_server_checked is given, it is called after each server is checked.
+        """
         all_servers_up = True
 
         # A plain loop instead of all(...), because all() stops at the first
         # server that is down and would leave the rest unchecked.
         for server in servers:
-            if not self.check_server(server):
+            is_up = self.check_server(server)
+
+            if not is_up:
                 all_servers_up = False
+
+            if on_server_checked is not None:
+                on_server_checked(server, is_up)
 
         return all_servers_up
     # endregion

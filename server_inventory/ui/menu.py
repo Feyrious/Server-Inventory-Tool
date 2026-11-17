@@ -117,8 +117,13 @@ class Menu:
 
     def _check_all_servers(self) -> None:
         print("Checking all servers, this can take a few seconds...")
-        self.inventory.check_all_servers()
+        self.inventory.check_all_servers(on_server_checked=self._print_check_result)
+        print()
         print_server_table(self.inventory.get_all_servers())
+
+    def _print_check_result(self, server: dict, is_up: bool) -> None:
+        """Print one line as soon as a server has been checked, so the user sees progress."""
+        print(f"  {server['name']:<10} {'up' if is_up else 'down'}")
 
     def _export_report(self) -> None:
         report_file = self.exporter.export_csv(self.inventory.get_all_servers())
