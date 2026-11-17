@@ -240,3 +240,61 @@ mail01         203.0.113.25    prod  mail-server    unknown   -
 ```
 
 A `-` under *Last checked* means the server has never been checked.
+
+## Using the command line
+
+With a flag, the tool runs one action and exits. This is the mode to use in
+scripts. Run `python3 main.py --help` to see all flags.
+
+| Command | What it does |
+|---|---|
+| `python3 main.py` | Starts the text menu |
+| `python3 main.py --list` | Prints all servers |
+| `python3 main.py --list --env prod` | Prints only the servers in `prod` (also `dev`, `test`) |
+| `python3 main.py --check web01` | Pings `web01`, saves the result and prints its row |
+| `python3 main.py --check-all` | Pings every server, saves the results and prints the table |
+| `python3 main.py --export` | Writes a CSV report to `reports/` and prints its path |
+| `python3 main.py --help` | Shows the help text |
+
+Every flag has a short form: `-l`, `-e`, `-c`, `-a`, `-x`, `-h`.
+
+Rules:
+
+- Only one action at a time: `--list`, `--check`, `--check-all` and
+  `--export` can't be combined. Combining them is an error (exit code 2).
+- `--env` only works together with `--list`.
+- `--verbose` (`-v`) can be added to any command.
+
+### Verbose mode
+
+`--verbose` prints what the tool is doing: which data file it uses, which
+servers it loads and saves, the exact `ping` command for each server and its
+result, and the final exit code.
+
+```bash
+python3 main.py --check db01 --verbose
+```
+
+```text
+[verbose] Verbose mode is on
+[verbose] Data file: /home/user/Server-Inventory-Tool/servers.json (set INVENTORY_DATA_FILE to change it)
+[verbose] Reports folder: /home/user/Server-Inventory-Tool/reports
+[verbose] Loaded 14 servers from /home/user/Server-Inventory-Tool/servers.json
+[verbose] Action: check server 'db01'
+[verbose] Checking server 'db01' at 127.0.0.1
+[verbose] Running command: ping -c 1 -W 2 127.0.0.1
+[verbose] ping exited with code 0 for 127.0.0.1
+[verbose] Saved 14 servers to /home/user/Server-Inventory-Tool/servers.json
+Name           Address         Env   Role           Status    Last checked
+------------------------------------------------------------------------------
+db01           127.0.0.1       prod  database       up        2026-11-17 15:44
+[verbose] Process finished with exit code 0 (OK)
+```
+
+Verbose messages are written to *stderr* and the normal output to *stdout*,
+so you can save the output to a file and still see the verbose messages in
+the terminal:
+
+```bash
+python3 main.py --list --verbose > servers.txt
+```
