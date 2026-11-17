@@ -5,7 +5,7 @@ to the list goes through this class and is saved right away. No input() or
 print(), so the menu and the CLI share the same rules.
 """
 
-from server_inventory.services.server_checker import ServerChecker
+from server_inventory.services.server_checker import ServerChecker, ServerCheckedCallback
 from server_inventory.storage.server_repository import ServerRepository
 
 VALID_ENVIRONMENTS = ["dev", "test", "prod"]
@@ -83,9 +83,12 @@ class InventoryService:
         self._save()
         return is_up
 
-    def check_all_servers(self) -> bool:
-        """Check every server, save the new statuses and return True if all are up (G10, G16)."""
-        all_servers_up = self.checker.check_all(self.servers)
+    def check_all_servers(self, on_server_checked: ServerCheckedCallback | None = None) -> bool:
+        """Check every server, save the new statuses and return True if all are up (G10, G16).
+
+        If on_server_checked is given, it is called after each server is checked.
+        """
+        all_servers_up = self.checker.check_all(self.servers, on_server_checked)
         self._save()
         return all_servers_up
     # endregion

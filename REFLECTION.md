@@ -60,6 +60,9 @@
 - argparse mutually exclusive group: conflicting flags (`-l -a`) give an error and exit code 2 instead of being silently ignored by an `if/elif` chain. The library enforces the rule instead of my own code.
 - `--list-env` is a separate flag instead of the spec's `--list --env prod`: a deliberate deviation, clearer to use, documented in the README.
 - C# habit that went wrong: `type=bool` in argparse. `bool("False")` is `True`; flags should use `action="store_true"`.
+- `process_data()` in `main.py` returns `True`/`False` and only `main()` calls `status_ok()` / `status_failed()`. The logic reports a result; one place decides how the process ends (G16).
+- `VALID_ENVIRONMENTS` is now the single source for the CLI `choices`, the menu prompt and the service rule, so the three can't disagree.
+- The CLI `--check-all` prints only the final table, while the menu shows each server live. Same service method, the caller decides how much to show.
 
 ## Other choices
 
@@ -75,7 +78,7 @@
 ### `exists()` (look before you leap) vs `try/except FileNotFoundError` (easier to ask forgiveness)
 - `ServerRepository.load()` uses `exists()` because G7 asks for it.
 - The more Pythonic alternative is `try/except`; it also avoids a race where the file disappears between the check and the open.
-- Not yet handled: a file that exists but contains broken JSON (`json.JSONDecodeError`).
+- Broken JSON (`json.JSONDecodeError`) is caught in `main.create_services()` and exits with code 1 through `exit_status.error_read_file()`. The repository itself doesn't decide how to report it.
 
 ### `check_all()` uses a loop, not `all(...)`
 - `all()` stops at the first `False`, so servers after the first down server would never be checked and keep stale status.
@@ -96,10 +99,13 @@
 - Con: every check changes a tracked file, so `git status` is "dirty" after using the tool.
 - Report filename `inventory_YYYY-MM-DD_HHMM.csv`: no `:` because it is invalid on Windows. Two exports in the same minute overwrite each other.
 - `csv.DictWriter(extrasaction="ignore")`: extra keys (e.g. a future history list) don't break the export.
+- `reports/report.example.csv` is committed as an example. `.gitignore` uses `reports/*` plus `!reports/report.example.csv`; a plain `reports/` can't have exceptions because git skips ignored folders entirely.
+- Example data in `servers.json` uses loopback addresses (always up) and the reserved documentation ranges 192.0.2.x, 198.51.100.x and 203.0.113.x (always down), so a real check gives predictable results. `web02` (197.0.0.5) is a real public address and could change.
 
 ### Global state: `config.IS_VERBOSE`
 - A module-level variable set once from `main.py` and read by `exit_status`. Simple, but it is hidden global state.
 - Alternative: pass `verbose` as a parameter or into constructors. More explicit, more plumbing.
+- Consequence: `exit_status` only prints when verbose is on, so without `-v` a broken data file exits with code 1 but shows nothing. Fine for pipelines (they read the exit code), confusing for a person. Would change: always print errors to stderr, and use verbose only for extra detail.
 
 ### Process: git flow and one PR per feature
 - `main` / `develop` / `feature/*` branches, every change merged through a PR with a description and test table.
@@ -109,6 +115,15 @@
 ### Testing approach
 - Manual tests on a copy of `servers.json`, never on the real file. Fakes for `ping` (`true`/`false` commands) to test the logic without the network.
 - No automated tests yet. With more time: `pytest` with temporary files (`tmp_path`) and a fake checker.
+
+### Text UI (`ui/menu.py`, `ui/display.py`)
+- Menu choices live in one dict: choice -> (text, handler method). Adding a choice is one line, and the printed menu and the handling can't drift apart. Alternative: a long `if/elif` chain (what `main.py` uses for the CLI, where argparse already limits the options).
+- Table columns are defined once in `display._COLUMNS` (key, title, width), so header and rows always line up (G14).
+- Fixed column widths vs auto-sizing: a 19-character role (`integration-testing`) overflowed its column during testing. I widened name/role to 15 and shortened the role to `inter-testing`. Auto-sizing each column to its longest value would never overflow but is more code; fixed widths match the assignment's `:<15` hint.
+- Progress while checking all servers: the menu was silent until every check finished (up to 2 s per unreachable server). Options: (A) loop in the menu (duplicates logic, saves once per server), (B) an optional callback `on_server_checked(server, is_up)` passed through `InventoryService` to `ServerChecker`, (C) a generator that yields results (saving becomes awkward if the caller stops early). Chose B: services still never print, the loop and the single save stay in one place. Like passing an `Action<T1, T2>` in C#.
+- `main.create_services()` is the composition root: the only place where objects are created and connected (manual dependency injection, like a DI container in `Program.cs`).
+- `Checking nope...` prints before "No server named 'nope' exists." because `check_server()` does lookup and check in one call. Small UX cost of keeping the menu free of rules.
+- Not handled yet (the "Säkrare inmatning" VG extra): empty names/addresses are accepted, names with spaces are allowed, and Ctrl+C at a prompt ends the program with a traceback (`KeyboardInterrupt`).
 
 ## VG3: a larger environment (1 000 servers, nightly pipeline)
 - **Check time:** checks run one at a time with a 2 s timeout. 1 000 servers, many down → up to ~33 minutes. Fix: run checks in parallel (`concurrent.futures.ThreadPoolExecutor`) or with `asyncio`.
