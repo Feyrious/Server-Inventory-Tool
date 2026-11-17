@@ -12,6 +12,7 @@ from server_inventory.errors import (
     DataFileNotSavedError,
     DataFileUnreadableError,
 )
+from server_inventory.verbose import log_verbose
 
 
 class ServerRepository:
@@ -27,6 +28,7 @@ class ServerRepository:
         Raises DataFileInvalidError or DataFileUnreadableError if the file can't be used.
         """
         if not self.data_file.exists():
+            log_verbose(f"Data file {self.data_file} not found, starting with an empty list")
             return []
 
         try:
@@ -46,6 +48,7 @@ class ServerRepository:
                 f"The data file {self.data_file} must contain a list of servers."
             )
 
+        log_verbose(f"Loaded {len(servers)} servers from {self.data_file}")
         return servers
 
     def save(self, servers: list[dict]) -> None:
@@ -60,6 +63,8 @@ class ServerRepository:
             with open(self.data_file, "w", encoding="utf-8") as file:
                 json.dump(servers, file, indent=2, ensure_ascii=False)
                 file.write("\n")
+
+            log_verbose(f"Saved {len(servers)} servers to {self.data_file}")
         except OSError as error:
             raise DataFileNotSavedError(
                 f"Could not save the data file {self.data_file}: {error.strerror}."

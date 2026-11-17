@@ -12,6 +12,7 @@ from server_inventory.services.inventory_service import (
 )
 from server_inventory.storage.report_exporter import ReportExporter
 from server_inventory.ui.display import print_server_table
+from server_inventory.verbose import log_verbose
 
 _QUIT_CHOICE = "0"
 _PROD_ENVIRONMENT = "prod"
@@ -42,6 +43,7 @@ class Menu:
         while True:
             self._print_menu()
             choice = input("Choose an option: ").strip()
+            log_verbose(f"Menu choice: '{choice}'")
 
             if choice == _QUIT_CHOICE:
                 print("Goodbye!")

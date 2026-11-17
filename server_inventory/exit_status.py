@@ -8,7 +8,7 @@ import sys
 from enum import IntEnum
 from typing import NoReturn
 
-from server_inventory import config
+from server_inventory.verbose import log_verbose
 
 
 class ExitCode(IntEnum):
@@ -38,6 +38,5 @@ def exit_program(code: ExitCode, error_message: str = "") -> NoReturn:
 
 # region Private functions
 def _print_system_info(code: ExitCode) -> None:
-    if config.IS_VERBOSE:
-        print(f"Process finished with exit code {code.value} ({code.name})")
+    log_verbose(f"Process finished with exit code {code.value} ({code.name})")
 # endregion

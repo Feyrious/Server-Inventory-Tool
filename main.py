@@ -11,6 +11,7 @@ from server_inventory.storage.report_exporter import ReportExporter
 from server_inventory.storage.server_repository import ServerRepository
 from server_inventory.ui.display import print_server_table
 from server_inventory.ui.menu import Menu
+from server_inventory.verbose import log_verbose
 
 
 def main():
@@ -105,22 +106,28 @@ def process_data(
     """Run the chosen action and return False if a check failed or the server does not exist."""
     if verbose:
         config.IS_VERBOSE = True
+        log_verbose("Verbose mode is on")
 
     inventory, exporter = create_services()
 
     if list_servers:
+        log_verbose(f"Action: list servers (environment filter: {env or 'none'})")
         servers = inventory.filter_by_environment(env) if env else inventory.get_all_servers()
         print_server_table(servers)
     elif check:
+        log_verbose(f"Action: check server '{check}'")
         return check_one_server(inventory, check)
     elif check_all:
+        log_verbose("Action: check all servers")
         all_servers_up = inventory.check_all_servers()
         print_server_table(inventory.get_all_servers())
         return all_servers_up
     elif export:
+        log_verbose("Action: export CSV report")
         report_file = exporter.export_csv(inventory.get_all_servers())
         print(f"Report saved to {report_file}")
     else:
+        log_verbose("No action given, starting the text menu")
         Menu(inventory, exporter).run()
 
     return True
@@ -140,7 +147,11 @@ def check_one_server(inventory: InventoryService, name: str) -> bool:
 
 def create_services() -> tuple[InventoryService, ReportExporter]:
     """Create the services and connect them (manual dependency injection)."""
-    repository = ServerRepository(config.get_data_file_path())
+    data_file = config.get_data_file_path()
+    log_verbose(f"Data file: {data_file} (set {config.DATA_FILE_ENV_VARIABLE} to change it)")
+    log_verbose(f"Reports folder: {config.REPORTS_DIRECTORY}")
+
+    repository = ServerRepository(data_file)
     inventory = InventoryService(repository, ServerChecker())
     return inventory, ReportExporter(config.REPORTS_DIRECTORY)
 

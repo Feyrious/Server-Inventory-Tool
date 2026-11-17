@@ -8,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 
 from server_inventory.errors import ReportNotSavedError
+from server_inventory.verbose import log_verbose
 
 REPORT_COLUMNS = ["name", "address", "env", "role", "status", "last_checked"]
 _FILENAME_TIMESTAMP_FORMAT = "%Y-%m-%d_%H%M"
@@ -26,6 +27,7 @@ class ReportExporter:
         Raises ReportNotSavedError if the report can't be written.
         """
         report_file = self.reports_directory / self._build_report_filename()
+        log_verbose(f"Writing CSV report with {len(servers)} servers to {report_file}")
 
         try:
             self.reports_directory.mkdir(parents=True, exist_ok=True)
