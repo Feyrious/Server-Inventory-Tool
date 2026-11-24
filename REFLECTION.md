@@ -287,3 +287,47 @@ name of the server, and then sends that name on to be validated, makes it
 super clear what's going on in the code. If we merged them, the code would
 still work, but the function would be doing more that we need to keep track
 of, and it would also be less reusable.
+
+## 6. A larger environment (VG3)
+
+> Imagine that the tool is used for 1 000 servers, or runs automatically
+> every night in a pipeline. Today, `ServerChecker.check_all()` in
+> `services/server_checker.py` checks the servers one at a time, with a
+> 2 second timeout each, so a run with 1 000 servers could take over 30
+> minutes. What would you do about that?
+
+The one big thing that would speed it up by a lot is using threads, where each
+thread runs its own separate check. This would cut down the time needed by a
+large factor, depending on the number of threads the process is allowed to
+start.
+
+> All servers are stored in one JSON file, which `ServerRepository.save()` in
+> `storage/server_repository.py` rewrites on every change. What problems would
+> that cause at this scale, and what would you use instead?
+
+As I mentioned earlier, I would migrate from a file-based storage to a robust
+database to keep track of the servers. This speeds up loading and saving the
+servers, and even allows each thread to update the database itself, since a
+database can accept multiple connections. One risk is introducing race
+conditions.
+
+> `InventoryService.find_by_name()` loops through every server to find one.
+> Does that matter with 1 000 servers, and what would you change?
+
+It does matter, since the time it takes to find a server depends on where in
+the list it is stored. If it's in the first few rows it's super quick, but if
+it's in the last few, it might take a long time to get to that row. This could
+be solved with a dedicated sort and search algorithm. Or we could move this
+over to the database, since it's the database's job to quickly find records
+among tens of thousands. That would make the lookup a lot quicker too.
+
+> In a nightly pipeline, nobody is watching the screen. What would the tool
+> need to be useful there?
+
+Logging is always essential in automated processes. Having the tool log what's
+going on while it's running is critical, and so is delivering it in a
+structured and readable way. The error codes, when used right, would also
+allow for automating how failures are handled. A simple scenario would be a
+temporary network issue that makes it impossible to ping the servers: the exit
+code would then tell the pipeline to retry later, when the network might be
+back up again.
