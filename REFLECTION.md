@@ -142,7 +142,16 @@
 - Progress while checking all servers: the menu was silent until every check finished (up to 2 s per unreachable server). Options: (A) loop in the menu (duplicates logic, saves once per server), (B) an optional callback `on_server_checked(server, is_up)` passed through `InventoryService` to `ServerChecker`, (C) a generator that yields results (saving becomes awkward if the caller stops early). Chose B: services still never print, the loop and the single save stay in one place. Like passing an `Action<T1, T2>` in C#.
 - `main.create_services()` is the composition root: the only place where objects are created and connected (manual dependency injection, like a DI container in `Program.cs`).
 - `Checking nope...` prints before "No server named 'nope' exists." because `check_server()` does lookup and check in one call. Small UX cost of keeping the menu free of rules.
-- Not handled yet (the "Säkrare inmatning" VG extra): empty names/addresses are accepted, and names with spaces are allowed. (Ctrl+C and Ctrl+D at a prompt are handled since the exit code work: exit code 130 and a clean quit.)
+- Ctrl+C and Ctrl+D at a prompt are handled since the exit code work: exit code 130 and a clean quit.
+
+### Safer input (second VG1 extra, after the teacher's feedback)
+- Before: empty names and addresses were accepted, and names with spaces were allowed. The teacher asked for this before giving VG.
+- Chose: the rules as plain functions in the service (`is_valid_name()`, `is_valid_address()` in `inventory_service.py`, next to `is_valid_environment()`), and "ask until valid" loops in the menu (`Menu._ask_for_name()`, `_ask_for_address()`), the same pattern as `_ask_for_environment()`.
+- `add_server()` checks the rules too and raises `ValueError`: a safety net, so a future caller (e.g. an `--add` flag) can't save a bad server even if it skips the menu's checks. Cost: the rule is called twice when adding through the menu.
+- Alternatives: validate only in the menu (simpler, but the rule would have to be copied for every new input path, G18); or validate only in `add_server()` and let the menu catch the error (one check, but the user only finds out after entering every field).
+- Spaces only vs all whitespace: `" " not in name` matches what the teacher asked for and reads clearly. `any(c.isspace() for c in name)` would also block tabs, but a tab can't be typed at an `input()` prompt anyway.
+- A duplicate name is still caught at the end by `add_server()`, not asked again right away. Would change: check `find_by_name()` inside `_ask_for_name()` too, so the user doesn't type all fields for nothing.
+- Would change in a larger setup: validate the address format (IP address or host name), e.g. with the `ipaddress` module, instead of only checking that it isn't empty.
 
 ### Python 3.10 as the minimum version
 - The code uses the `X | None` syntax in type hints (`find_by_name() -> dict | None`, `process_data(env: str | None, ...)`). Those hints are evaluated when the function is defined, so the program won't even start on Python 3.9 or older.
