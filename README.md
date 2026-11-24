@@ -21,6 +21,8 @@ the exit code tells you whether all servers are up.
 - Exit codes for every outcome, so scripts and pipelines can react to the result
 - `--verbose` mode that shows what the tool is doing, including the exact
   commands it runs
+- Safer input: the menu asks again instead of accepting an empty name, an
+  empty address or a name with spaces
 
 The tool is written in Python and uses only the standard library.
 
@@ -216,7 +218,7 @@ Choose an option:
 |---|---|
 | `1` | Shows all servers as a table |
 | `2` | Asks for an environment (`dev`, `test` or `prod`) and shows only those servers |
-| `3` | Asks for name, address, environment and role, and adds the server with status `unknown`. Names must be unique. |
+| `3` | Asks for name, address, environment and role, and adds the server with status `unknown`. Names must be unique, see [Safer input](#safer-input). |
 | `4` | Asks for a name and removes that server. Servers in `prod` need an extra confirmation: type `yes` to remove. |
 | `5` | Asks for a name, pings that server and shows whether it is up or down |
 | `6` | Pings every server, shows each result as soon as it is ready, then shows the updated table |
@@ -240,6 +242,44 @@ mail01         203.0.113.25    prod  mail-server    unknown   -
 ```
 
 A `-` under *Last checked* means the server has never been checked.
+
+### Safer input
+
+When you add a server, the menu checks each value as you type it and asks
+again until it is valid, instead of saving a server with missing or broken
+values:
+
+| Field | Rule |
+|---|---|
+| Name | Can't be empty or contain spaces |
+| Address | Can't be empty |
+| Environment | Must be `dev`, `test` or `prod` |
+
+Spaces at the start and end of a value are removed before it is checked, so a
+value of only spaces counts as empty.
+
+```text
+Choose an option: 3
+Name: web 01
+The name can't be empty or contain spaces, please try again.
+Name: web01
+Address:
+The address can't be empty, please try again.
+Address: 10.0.0.1
+Environment (dev, test, prod): staging
+'staging' is not a valid environment, please try again.
+Environment (dev, test, prod): dev
+Role: web-server
+Server 'web01' was added.
+```
+
+A name that already exists is rejected when the server is saved, with the
+message `A server named 'web01' already exists.`
+
+The rules live in `server_inventory/services/inventory_service.py`
+(`is_valid_name()`, `is_valid_address()`, `is_valid_environment()`), and
+`add_server()` checks them too, so no part of the program can save a server
+that breaks them.
 
 ## Using the command line
 
