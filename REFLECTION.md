@@ -188,3 +188,50 @@ it would be a nice library to have for internal tooling in a company, but
 outside of that it might get too bloated to actually be useful to anyone.
 Small, niche libraries are often easier to use and less demanding on
 resources.
+
+## 4. Private methods by convention
+
+> Python has no `private` keyword like C#. A name that starts with `_`, like
+> `InventoryService._save()`, `ServerChecker._ping()` or
+> `ReportExporter._build_report_filename()`, only tells other developers
+> "don't use this from outside". Python doesn't stop them. Why did you mark
+> methods as private with `_` anyway?
+
+This is a habit from working in C# and .NET, where everything is public,
+internal or private, since it's based on the principles of OOP. Making it
+clear when a method is only used internally, rather than exposed to the rest
+of the code base, makes it easier to follow the logical paths in the code.
+
+> How did you decide what should be public and what should be private?
+
+The principle is that a public method is exposed to the rest of the code, and
+then handles the request internally. A similar analogy is a car: turning the
+key to start it is quite easy, while looking at the actual engine is a lot
+more complex to deal with.
+
+> You also structured every class with `# region Public methods` and
+> `# region Private methods` blocks. Why?
+
+The simple answer is that it helps me structure the code in the IDE I'm
+working in. I can fold regions of code together when I only need to work on
+the public interface, or when I need to fix a bug that is internal to the file
+itself. And since Python doesn't enforce public and private, the regions give
+the code a clear structure that keeps it more maintainable.
+
+> What is the downside of privacy that is only a convention?
+
+The downside is that it can't be enforced. If someone wants to use one of the
+private functions, they can, and there's no real way to stop it. But if this
+project were built by a team, there would also be company policies for how to
+work with the code base, usually set by the project architect or project
+manager.
+
+> If more people worked on the code, or it was used as a library, what would
+> you do differently?
+
+I think most of the project is covered by a kind of softly enforced structure,
+where I would hope that most team members see and follow the conventions set
+for this code base. But that only goes so far in terms of what the code itself
+can do. The next step would be to also enforce it in code reviews and pull
+requests, and even before that, to make sure new colleagues are onboarded into
+the process of working with this code base.
