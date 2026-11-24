@@ -235,3 +235,55 @@ for this code base. But that only goes so far in terms of what the code itself
 can do. The next step would be to also enforce it in code reviews and pull
 requests, and even before that, to make sure new colleagues are onboarded into
 the process of working with this code base.
+
+## 5. The two extras (VG1)
+
+### `--verbose`
+
+> Why did you pick `--verbose` as one of your extras?
+
+It's something that can be implemented very easily, from just adding a few
+lines that print something when triggered, all the way to building a more
+robust logging system. And coming back to the point that more information is
+always better: having a robust way of showing the user what's going on, even
+if they can't read the code itself, is something I think is important to add
+to a tool like this.
+
+> The `[verbose]` lines are printed to *stderr*, while the normal output, like
+> the server table, goes to *stdout*. Why does that matter?
+
+They are two different pipelines for printing information to the console.
+Using stderr for what's being logged is a safeguard that makes sure the last
+error gets printed before the program shuts down. It can also be written to an
+error log, so the user can review it later if needed.
+
+> All verbose messages go through one helper, `log_verbose()` in
+> `verbose.py`, instead of an `if` before every `print()`. Why?
+
+This is as simple as the concept of "don't repeat yourself". Instead of having
+lots of lines doing the same thing, there is now a single point in the code
+that handles printing the verbose messages. This is especially useful in the
+future if the way they are handled changes: instead of looking at every line
+that prints a message, there is just one place where the code needs to change.
+
+### Safer input
+
+> The teacher asked for this extra. Why is it important that the tool asks
+> again instead of accepting an empty name or a name with spaces?
+
+It's simply a way to avoid adding invalid data and empty entries. This is
+especially important in a tool like this, where you need to know which server
+does what when there might be tens or hundreds of servers. And since the
+server name acts as its unique identifier, empty or broken names would break
+that really quickly.
+
+> The rules are in the service (`is_valid_name()` and `is_valid_address()` in
+> `services/inventory_service.py`), but the "ask again" loops are in the menu
+> (`Menu._ask_for_name()` and `_ask_for_address()` in `ui/menu.py`). Why split
+> it like that?
+
+It makes the code a bit more readable. Having one line that first asks for the
+name of the server, and then sends that name on to be validated, makes it
+super clear what's going on in the code. If we merged them, the code would
+still work, but the function would be doing more that we need to keep track
+of, and it would also be less reusable.
