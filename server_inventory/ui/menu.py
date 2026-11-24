@@ -8,7 +8,9 @@ from server_inventory.errors import PingNotAvailableError
 from server_inventory.services.inventory_service import (
     VALID_ENVIRONMENTS,
     InventoryService,
+    is_valid_address,
     is_valid_environment,
+    is_valid_name,
 )
 from server_inventory.storage.report_exporter import ReportExporter
 from server_inventory.ui.display import print_server_table
@@ -77,8 +79,8 @@ class Menu:
         print_server_table(self.inventory.filter_by_environment(env))
 
     def _add_server(self) -> None:
-        name = input("Name: ").strip()
-        address = input("Address: ").strip()
+        name = self._ask_for_name()
+        address = self._ask_for_address()
         env = self._ask_for_environment()
         role = input("Role: ").strip()
 
@@ -137,6 +139,26 @@ class Menu:
     def _export_report(self) -> None:
         report_file = self.exporter.export_csv(self.inventory.get_all_servers())
         print(f"Report saved to {report_file}")
+
+    def _ask_for_name(self) -> str:
+        """Ask until the user enters a name that is not empty and has no spaces."""
+        while True:
+            name = input("Name: ").strip()
+
+            if is_valid_name(name):
+                return name
+
+            print("The name can't be empty or contain spaces, please try again.")
+
+    def _ask_for_address(self) -> str:
+        """Ask until the user enters an address that is not empty."""
+        while True:
+            address = input("Address: ").strip()
+
+            if is_valid_address(address):
+                return address
+
+            print("The address can't be empty, please try again.")
 
     def _ask_for_environment(self) -> str:
         """Ask until the user enters a valid environment (G3)."""

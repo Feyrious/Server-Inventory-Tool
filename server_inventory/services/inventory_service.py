@@ -18,6 +18,16 @@ def is_valid_environment(env: str) -> bool:
     return env in VALID_ENVIRONMENTS
 
 
+def is_valid_name(name: str) -> bool:
+    """Return True if the name is not empty and has no spaces (Safer input)."""
+    return name.strip() != "" and " " not in name
+
+
+def is_valid_address(address: str) -> bool:
+    """Return True if the address is not empty (Safer input)."""
+    return address.strip() != ""
+
+
 class InventoryService:
     """Holds the servers while the program runs and saves every change."""
 
@@ -44,10 +54,17 @@ class InventoryService:
     def add_server(self, name: str, address: str, env: str, role: str) -> dict:
         """Add a new server with status "unknown" and save (G2, G4, G5).
 
-        Raises ValueError if the name is taken or the environment is invalid.
+        Raises ValueError if the name is empty, has spaces or is taken, if the
+        address is empty, or if the environment is invalid.
         """
+        if not is_valid_name(name):
+            raise ValueError("The name can't be empty or contain spaces.")
+
         if self.find_by_name(name) is not None:
             raise ValueError(f"A server named '{name}' already exists.")
+
+        if not is_valid_address(address):
+            raise ValueError("The address can't be empty.")
 
         if not is_valid_environment(env):
             raise ValueError(f"'{env}' is not a valid environment.")
