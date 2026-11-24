@@ -129,3 +129,62 @@ the features grow, so does the file. There might come a time when it needs to
 be split into separate files, maybe with an orchestrator that points to the
 specific methods in their own files, using the main file as the public
 interface.
+
+## 3. Exit codes for every kind of error
+
+> Requirement G16 only asks for exit code `0` (all good) and `1` (a server is
+> down or doesn't exist). The program instead gives every kind of error its
+> own code: the `ExitCode` enum in `exit_status.py` has codes 2–7 for things
+> like invalid arguments, a broken data file or a missing `ping`, and 130 for
+> Ctrl+C. Why did you choose to do that?
+
+That comes down to having had to deal with programs that are really bad at
+giving feedback on what is wrong. To be able to troubleshoot, you need as much
+and as precise information as you can get, so you can pinpoint the issue.
+Having several error codes, and making sure to document them (which isn't
+always the case either), is an important step for that. Since the program
+could be used by others than me, those people would need to know where to
+start looking, in the code base or in their own process.
+
+> Who is helped by having different codes?
+
+The first people to come in contact with a tool like this would be other
+DevOps engineers who might want to add it to their process and pipeline.
+Setting it up and ironing out issues will be the first thing on their list
+when they add a new tool to the tool belt. The error codes give them a head
+start when debugging, and when setting up fallback procedures to make sure
+that everything runs smoothly while it's in use.
+
+> Each error class in `errors.py` (for example `DataFileInvalidError` and
+> `PingNotAvailableError`) knows its own exit code, so `main()` in `main.py`
+> handles all of them in one `except InventoryError` block. Why is that better
+> than checking each error type in `main.py`?
+
+This is mostly tied to the concept of encapsulation, mostly used in OOP, where
+a class is only concerned with itself, its own data and its own state. Having
+the errors and their codes in one file makes them easier to find, add to or
+update when needed. It also cuts down on the size of `main.py`, which keeps
+the code cleaner and makes it easier to follow each operation.
+
+> What is the downside? For example, the error classes now "know about" exit
+> codes, which are really a command line thing.
+
+That's true, the codes are mostly used when the tool is part of a command line
+workflow. But even then, it's still more information kept in the same place,
+and as I mentioned above, that makes it easier to maintain and to find the
+information needed to fix issues that might come up. So it might be a bit
+redundant when using the menu, but in this case I would rather give too much
+information than too little.
+
+> If this code became a library that other programs use, what would you
+> change?
+
+That is actually not something I have thought of. It could quite easily be
+moved as it is into its own module, and a stricter and more detailed list of
+codes could be added over time to cover more failure modes. But programs are
+also often very unique in their nature and in how things are implemented,
+which makes it hard to cover every base with an error code for everything. So
+it would be a nice library to have for internal tooling in a company, but
+outside of that it might get too bloated to actually be useful to anyone.
+Small, niche libraries are often easier to use and less demanding on
+resources.
