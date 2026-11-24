@@ -62,3 +62,70 @@ In that scenario, I would lean more towards a proper database connection
 instead of writing to and reading from a file. I would also add support for
 bulk operations, so that a large number of servers could be saved, updated and
 deleted at once, rather than one at a time.
+
+## 2. Splitting the program into packages and classes
+
+> The course uses plain functions in flat modules, but the code is split into
+> the package `server_inventory/` with the folders `storage/`, `services/` and
+> `ui/`, and uses classes such as `ServerRepository`, `InventoryService`,
+> `ServerChecker` and `Menu`. Why did you choose to structure it this way?
+
+I have several years of experience working as a software developer, and
+building code in a structured way is second nature to me. I come from C# and
+.NET, where object-oriented programming (OOP) is common practice. There,
+splitting the code into separate projects, libraries and NuGet packages and
+referencing them is what makes the code easier to read and maintain.
+
+> What is the job of each folder?
+
+I separated the code into folders (modules) by their logical function. The
+`storage` module takes care of loading and storing the data, and handles any
+problems with those operations. The `services` module is where the business
+logic lives: validation and all the functions behind the menu and the CLI.
+This way, important functions aren't tied to the UI or to loading and saving
+the data. For the UI, I made sure that the code is easy and clean to use and
+simple to call. Since the UI is mostly about the menu, it's better to have it
+separated as well. Building it this way keeps the code clean, readable and
+easy to maintain, without the parts being coupled together.
+
+> Some parts are still plain functions, like `is_valid_environment()` in
+> `services/inventory_service.py` and `print_server_table()` in
+> `ui/display.py`. Why not make everything a class?
+
+Since the course mainly focused on a function-driven program, I leaned more
+into that than I normally would, since C# builds basically everything from
+classes. Python doesn't really have that strict "everything is a class"
+architecture, so it was also a way to learn to do things in another way. It
+also made the code base smaller, since not everything had to be built on a
+class, with all the plumbing that comes with that.
+
+> Requirement G1 says that each server must be a dictionary. How did that fit
+> with your OOP plan?
+
+It's an interesting way to do it, since I'm used to building a class to
+represent the entity and using the object's properties to hold the data. That
+way, the entity could also handle its own validation and processing. But a
+dict is a nice way to do it, since it basically replicates how a class stores
+its data, but without the bloat that comes with a class. Instead, the business
+layer handles the validation, so it was an interesting way to solve it.
+
+> What is the downside of this structure for a small tool like this one?
+
+I wouldn't say there is really a downside, since all projects have their own
+quirks and things you need to be mindful of. But if I should mention one, it's
+that it's easier to get sloppy with smaller projects, since it's "just a small
+thing for now". Then it usually gets used more than expected and grows in an
+unplanned way. So keeping the edge and building the code in a maintainable way
+is an important skill to learn, even for smaller projects, since they usually
+don't stay that way.
+
+> Say you wanted to add something new later, like an `--add` flag for the
+> command line or a web page. How does the structure help, or not?
+
+Since all the logic lives in the services module, it wouldn't be too hard to
+add another method to handle the new CLI command. Once that is wired up, it's
+simple to also add it as a menu option, if that is a requirement too. But as
+the features grow, so does the file. There might come a time when it needs to
+be split into separate files, maybe with an orchestrator that points to the
+specific methods in their own files, using the main file as the public
+interface.
